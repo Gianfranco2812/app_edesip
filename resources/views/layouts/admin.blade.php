@@ -93,8 +93,8 @@
         <script src="{{ asset('admin/js/kaiadmin.min.js') }}"></script>
 
         <!-- Demo y configuraciones (opcional, puedes eliminarlos para aligerar la app) -->
-        <script src="{{ asset('admin/assets/js/setting-demo.js') }}"></script>
-        <script src="{{ asset('admin/assets/js/demo.js') }}"></script>
+        <!-- <script src="{{ asset('admin/assets/js/setting-demo.js') }}"></script>
+        <script src="{{ asset('admin/assets/js/demo.js') }}"></script> -->
 
             $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
                 type: "line",
