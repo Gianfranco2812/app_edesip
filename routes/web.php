@@ -8,6 +8,9 @@ use App\Http\Controllers\Admin\TipoProgramaController;
 use App\Http\Controllers\Admin\PlantillaContratoController;
 use App\Http\Controllers\Admin\ProgramaController;
 use App\Http\Controllers\Admin\GrupoController; 
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\VentaController;
+use App\Http\Controllers\ContratoController;
 
 
 // --- 1. RUTAS PÚBLICAS ---
@@ -16,6 +19,8 @@ use App\Http\Controllers\Admin\GrupoController;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+Route::get('contrato/confirmar/{token_acceso}', [ContratoController::class, 'mostrar'])->name('contratos.mostrar');
+Route::post('contrato/confirmar/{token_acceso}', [ContratoController::class, 'confirmar'])->name('contratos.confirmar');
 
 Auth::routes();
 
@@ -38,11 +43,18 @@ Route::middleware(['auth'])->group(function () {
 
         Route::resource('usuarios', UserController::class);
 
-        //Route::resource('cursos', CursoController::class);
         Route::resource('tipos-programa', TipoProgramaController::class);
         Route::resource('plantillas-contrato', PlantillaContratoController::class);
         Route::resource('programas', ProgramaController::class);
         Route::resource('grupos', GrupoController::class);
+    });
+
+        // --- 4. RUTAS DE ADMINISTRACIÓN Y ASESOR ---
+
+    Route::middleware(['role:Admin|Asesor'])->group(function () {
+        
+        Route::resource('clientes', ClienteController::class); 
+        Route::resource('ventas', VentaController::class);
 
     });
 

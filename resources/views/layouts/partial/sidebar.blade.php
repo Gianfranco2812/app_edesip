@@ -69,19 +69,28 @@
 
 
             @canany(['ver-clientes', 'ver-ventas', 'ver-cobranzas-personales'])
-            <li class="nav-section">
-            <span class="sidebar-mini-icon">
-                <i class="fa fa-ellipsis-h"></i>
-            </span>
-            <h4 class="text-section">OPERACIONES</h4>
-            </li>
+                @role('Admin|Asesor') 
+                <li class="nav-section">
+                <span class="sidebar-mini-icon">
+                    <i class="fa fa-ellipsis-h"></i>
+                </span>
+                <h4 class="text-section">OPERACIONES</h4>
+                </li>
 
-            <li class="nav-item {{ (request()->is('clientes*')) ? 'active' : '' }}">
-            <a href="#"> <i class="fas fa-users"></i>
-                <p>Clientes</p>
-            </a>
-            </li>
-            {{-- ... (El resto de tus menús de operaciones) ... --}}
+                <li class="nav-item {{ (request()->is('clientes*')) ? 'active' : '' }}">
+                <a href="{{ route('clientes.index') }}">
+                    <i class="fas fa-users"></i>
+                    <p>Clientes</p>
+                </a>
+                </li>
+                <li class="nav-item {{ (request()->is('ventas*')) ? 'active' : '' }}">
+                <a href="{{ route('ventas.index') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Ventas</p>
+                </a>
+                </li>
+
+                @endrole
             @endcanany
 
             </ul>
