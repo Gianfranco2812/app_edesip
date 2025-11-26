@@ -2,14 +2,14 @@
 <html lang="en">
     <head>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>Kaiadmin - Bootstrap 5 Admin Dashboard</title>
+        <title>Edesip</title>
         <meta
         content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
         name="viewport"
         />
         <link
         rel="icon"
-        href="{{ asset('admin/img/kaiadmin/favicon.ico') }}"
+        href="{{ asset('img/logo.png') }}"
         type="image/x-icon"
         />
 
@@ -86,9 +86,6 @@
         <!-- jQuery Vector Maps -->
         <script src="{{ asset('admin/js/plugin/jsvectormap/jsvectormap.min.js') }}"></script>
 
-        <!-- Sweet Alert -->
-        <script src="{{ asset('admin/assets/js/plugin/sweetalert/sweetalert.min.js') }}"></script>
-
         <!-- Kaiadmin principal -->
         <script src="{{ asset('admin/js/kaiadmin.min.js') }}"></script>
 
@@ -124,5 +121,8 @@
             });
         </script>
         @stack('scripts')
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+        @csrf
+        </form>
     </body>
 </html>

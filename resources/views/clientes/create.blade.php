@@ -17,9 +17,17 @@
             <form action="{{ isset($cliente) ? route('clientes.update', $cliente->id) : route('clientes.store') }}" method="POST">
                 @csrf
                 @if(isset($cliente))
-                @method('PUT')
+                    @method('PUT')
                 @endif
-
+                
+                @if(request('next') == 'matricula')
+                    <input type="hidden" name="next_step" value="matricula">
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Faltan datos:</strong> Por favor completa el <b>Tipo/N° Documento</b> y la <b>Dirección</b> para poder generar el contrato.
+                    </div>
+                @endif
                 <h4 class="fw-bold mb-3">1. Datos de Contacto (Obligatorios)</h4>
                 <div class="row">
                 <div class="col-md-4">
@@ -109,23 +117,30 @@
                 </div>
                 
                 <div class="text-end mt-4">
-                    <a href="{{ route('clientes.index') }}" class="btn btn-danger">Cancelar</a>
-                    
-                    @if(isset($cliente))
-                        <button type="submit" class="btn btn-primary">Actualizar Cliente</button>
-                    @else
-                        {{-- 
-                        Ambos son 'submit', pero con un 'name' y 'value' diferente.
-                        El controlador sabrá cuál presionaste.
-                        --}}
-                        <button type="submit" name="action" value="save_prospect" class="btn btn-info">
-                        Guardar Solo Prospecto
-                        </button>
-                        <button type="submit" name="action" value="matriculate" class="btn btn-primary">
-                        Matricular Ahora
-                        </button>
-                    @endif
-                </div>
+                        <a href="{{ route('clientes.index') }}" class="btn btn-danger">Cancelar</a>
+
+                        @if(isset($cliente))
+                            {{-- BOTONES DE EDICIÓN --}}
+                            
+                            @if(request('next') == 'matricula')
+                                {{-- Si venimos rebotados de la matrícula, mostramos este botón especial --}}
+                                <button type="submit" class="btn btn-warning fw-bold">
+                                    <i class="fas fa-save"></i> Guardar Datos y Continuar a Matrícula
+                                </button>
+                            @else
+                                {{-- Edición normal --}}
+                                <a href="{{ route('ventas.create', ['cliente_id' => $cliente->id]) }}" class="btn btn-success me-2">
+                                    <i class="fas fa-cart-plus"></i> Matricular
+                                </a>
+                                <button type="submit" class="btn btn-primary">Actualizar Cliente</button>
+                            @endif
+
+                        @else
+                            {{-- BOTONES DE CREACIÓN (Prospecto nuevo) --}}
+                            <button type="submit" name="action" value="save_prospect" class="btn btn-info">Guardar Solo Prospecto</button>
+                            <button type="submit" name="action" value="matriculate" class="btn btn-primary">Matricular Ahora</button>
+                        @endif
+                    </div>
             </form>
 
             </div>

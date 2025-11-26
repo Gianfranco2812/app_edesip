@@ -1,27 +1,34 @@
 <div class="main-header">
     <div class="main-header-logo">
-        <div class="logo-header" data-background-color="dark">
-        <a href="{{ url('/dashboard') }}" class="logo">
+    <div class="logo-header" data-background-color="white">
+        
+        <a href="{{ route('dashboard') }}" class="logo">
+            
             <img
-            src="{{ asset('assets/img/kaiadmin/logo_light.svg') }}"
-            alt="navbar brand"
-            class="navbar-brand"
-            height="20"
+                src="{{ asset('img/logo_edesip.png') }}" {{-- Asegúrate de subir tu imagen aquí --}}
+                alt="Logo Edesip"
+                class="navbar-brand"
+                height="20" {{-- Ajusta la altura según necesites (ej. 30 o 40) --}}
             />
+            
+            {{-- OPCIONAL: Si quieres texto al lado del logo --}}
+            <span class="text-white fw-bold ms-2">EDESIP</span>
+        
         </a>
+        
         <div class="nav-toggle">
             <button class="btn btn-toggle toggle-sidebar">
-            <i class="gg-menu-right"></i>
+                <i class="gg-menu-right"></i>
             </button>
             <button class="btn btn-toggle sidenav-toggler">
-            <i class="gg-menu-left"></i>
+                <i class="gg-menu-left"></i>
             </button>
         </div>
         <button class="topbar-toggler more">
             <i class="gg-more-vertical-alt"></i>
         </button>
-        </div>
-        </div>
+    </div>
+    </div>
 
     <nav
         class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom"
@@ -60,18 +67,14 @@
             </li>
 
             <li class="nav-item topbar-user dropdown hidden-caret">
-            <a
-                class="dropdown-toggle profile-pic"
-                data-bs-toggle="dropdown"
-                href="#"
-                aria-expanded="false"
-            >
+            <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
                 <div class="avatar-sm">
-                <img
-                    src="{{ asset('assets/img/profile.jpg') }}" {{-- (Cambia esto por la foto del usuario) --}}
-                    alt="..."
-                    class="avatar-img rounded-circle"
-                />
+                    {{-- Lógica para mostrar la foto real o la default --}}
+                    @if(Auth::user()->profile_photo_path)
+                        <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" alt="..." class="avatar-img rounded-circle" />
+                    @else
+                        <img src="{{ asset('img/edesip.jpg') }}" alt="..." class="avatar-img rounded-circle" />
+                    @endif
                 </div>
                 <span class="profile-username">
                 <span class="op-7">Hola,</span>
@@ -86,18 +89,20 @@
 
             <ul class="dropdown-menu dropdown-user animated fadeIn">
                 <div class="dropdown-user-scroll scrollbar-outer">
-                <li>
+                    <li>
                     <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#">Mi Perfil</a>
-                    <a class="dropdown-item" href="#">Configuración</a>
+                    
+                    <a class="dropdown-item" href="{{ route('profile.edit') }}">Mi Perfil</a>
+                    
+                    <a class="dropdown-item" href="{{ route('profile.edit') }}">Configuración</a>
+                    
                     <div class="dropdown-divider"></div>
                     
                     <a class="dropdown-item" href="{{ route('logout') }}"
-                    onclick="event.preventDefault();
-                                    document.getElementById('logout-form').submit();">
+                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         Salir
                     </a>
-                </li>
+                    </li>
                 </div>
             </ul>
             </li>

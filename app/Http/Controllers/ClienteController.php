@@ -109,6 +109,22 @@ class ClienteController extends Controller
 
         $cliente->update($data);
 
+        if ($request->input('next_step') == 'matricula') {
+        
+        // Verificamos de nuevo si ya llenó los datos (Doble check)
+        if (!empty($cliente->numero_documento) && !empty($cliente->direccion)) {
+            return redirect()
+                ->route('ventas.create', ['cliente_id' => $cliente->id])
+                ->with('success', 'Datos actualizados. Ahora sí, proceda con la matrícula.');
+        } else {
+            // Si guardó pero SIGUE sin llenar los datos, lo devolvemos
+            return back()
+                ->withInput() // Mantiene lo que escribió
+                ->with('error', 'Aún falta el Documento o la Dirección. Son obligatorios para el contrato.');
+        }
+    }
+    // -----------------------------------
+
         return redirect()->route('clientes.index')->with('success', 'Cliente actualizado exitosamente.');
     }
 

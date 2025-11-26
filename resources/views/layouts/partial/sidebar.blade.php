@@ -1,5 +1,32 @@
-<div class="sidebar" data-background-color="dark">
-    <div class="sidebar-wrapper scrollbar scrollbar-inner">
+<div class="sidebar" data-background-color="white">
+<div class="main-header-logo">
+    <div class="logo-header" data-background-color="white">
+        
+        <a href="{{ route('dashboard') }}" class="logo">
+            
+            <img
+                src="{{ asset('img/logo.png') }}" {{-- Asegúrate de subir tu imagen aquí --}}
+                alt="Logo Edesip"
+                class="navbar-brand"
+                height="70" {{-- Ajusta la altura según necesites (ej. 30 o 40) --}}
+            />
+        
+        </a>
+        
+        <div class="nav-toggle">
+            <button class="btn btn-toggle toggle-sidebar">
+                <i class="gg-menu-right"></i>
+            </button>
+            <button class="btn btn-toggle sidenav-toggler">
+                <i class="gg-menu-left"></i>
+            </button>
+        </div>
+        <button class="topbar-toggler more">
+            <i class="gg-more-vertical-alt"></i>
+        </button>
+    </div>
+    </div>    
+<div class="sidebar-wrapper scrollbar scrollbar-inner">
         <div class="sidebar-content">
         
         <ul class="nav nav-secondary">
@@ -88,6 +115,12 @@
                     <i class="fas fa-chart-line"></i>
                     <p>Ventas</p>
                 </a>
+                </li>
+                <li class="nav-item {{ (request()->is('cobranzas*')) ? 'active' : '' }}">
+                    <a href="{{ route('cobranzas.index') }}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <p>Cobranza</p>
+                    </a>
                 </li>
 
                 @endrole

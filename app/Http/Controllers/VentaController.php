@@ -39,26 +39,32 @@ class VentaController extends Controller
     }
 
     // ... (Aquí dejaremos los otros métodos vacíos por ahora)
-    public function create(Request $request) // <-- Añade Request
+    public function create(Request $request)
     {
-        // 1. Obtenemos el ID del cliente desde la URL (que enviamos en el Paso 1)
         $cliente_id = $request->query('cliente_id');
         
         if (!$cliente_id) {
-            // Si alguien trata de entrar a la URL sin un cliente
             return redirect()->route('clientes.index')->with('error', 'Debe seleccionar un cliente primero.');
         }
 
-        // 2. Buscamos al cliente
         $cliente = Cliente::findOrFail($cliente_id);
 
-        // 3. Buscamos los grupos que se pueden vender
-        // (Solo los que están 'Próximo' según tu flujo)
-        $gruposDisponibles = Grupo::where('estado', 'Próximo')
-                                ->with('programa') // Cargamos el programa para mostrar el nombre
-                                ->get();
+        // --- NUEVA VALIDACIÓN (La Guardia) ---
+        // Verificamos si faltan datos CRÍTICOS para el contrato
+        if (empty($cliente->numero_documento) || empty($cliente->direccion)) {
+            
+            // Si faltan datos, lo mandamos a editar, pero le pasamos una bandera 'next=matricula'
+            return redirect()
+                ->route('clientes.edit', ['cliente' => $cliente->id, 'next' => 'matricula'])
+                ->with('warning', 'Para generar el contrato, primero necesitamos completar el DNI y la Dirección del cliente.');
+        }
+        // -------------------------------------
 
-        // 4. Enviamos los datos a la nueva vista
+        // (El resto de tu código sigue igual...)
+        $gruposDisponibles = Grupo::where('estado', 'Próximo')
+                                    ->with('programa')
+                                    ->get();
+
         return view('ventas.create', compact('cliente', 'gruposDisponibles'));
     }
     public function store(Request $request)
@@ -67,6 +73,23 @@ class VentaController extends Controller
             'cliente_id' => 'required|exists:clientes,id',
             'grupo_id' => 'required|exists:grupos,id',
         ]);
+        // 1. Obtenemos los datos PRIMERO (para poder usar los nombres)
+        $cliente = Cliente::findOrFail($data['cliente_id']);
+        // Cargamos también el programa para dar más detalles
+        $grupo = Grupo::with('programa')->findOrFail($data['grupo_id']);
+
+        // 2. 🛡️ VALIDACIÓN ANTI-DUPLICADOS PERSONALIZADA
+        $existeMatricula = Venta::where('cliente_id', $cliente->id)
+                                ->where('grupo_id', $grupo->id)
+                                ->where('estado', '!=', 'Anulada')
+                                ->exists();
+
+        if ($existeMatricula) {
+            // Construimos el mensaje personalizado que pediste
+            $mensajeError = "{$cliente->nombre_completo} ya se encuentra matriculado en el grupo {$grupo->codigo_grupo} ({$grupo->programa->nombre}).";
+            
+            return back()->with('error', $mensajeError);
+        }
 
         // 1. Iniciar la Transacción
         // Si algo falla, se revierte todo (no quedan registros 'huérfanos')
@@ -117,7 +140,7 @@ class VentaController extends Controller
             // 7. Redirigir a la página de "Mostrar Contrato en Tablet"
             // (Esta ruta la crearemos a continuación)
             return redirect()->route('contratos.mostrar', $contrato->token_acceso)
-                       ->with('success', '¡Venta y Contrato generados! Pendiente de confirmación del cliente.');
+                        ->with('success', '¡Venta y Contrato generados! Pendiente de confirmación del cliente.');
 
         } catch (\Exception $e) {
             // 6b. Si algo falló, revierte todo
@@ -151,6 +174,50 @@ class VentaController extends Controller
         ];
 
         return str_replace(array_keys($reemplazos), array_values($reemplazos), $contenido);
+    }
+    /**
+     * Anula una venta (Retiro del alumno).
+     */
+    public function anular(Request $request, Venta $venta)
+    {
+        // 1. Validar que no esté ya anulada
+        if ($venta->estado == 'Anulada') {
+            return back()->with('error', 'Esta venta ya está anulada.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 2. Actualizar estado de la VENTA
+            $venta->update(['estado' => 'Anulada']);
+
+            // 3. Gestionar las CUOTAS
+            // Opción A: Borramos SOLO las cuotas que NO han sido pagadas (la deuda futura)
+            $venta->cuotas()->where('estado_cuota', '!=', 'Pagada')->delete();
+            
+            // (Si quisieras devolver el dinero de las pagadas, sería otro proceso, 
+            // pero por ahora asumimos que lo pagado, pagado está).
+
+            // 4. Actualizar estado del CONTRATO (si existe)
+            if ($venta->contrato) {
+                // Podrías tener un estado 'Anulado' en contratos también, 
+                // o simplemente dejarlo como constancia histórica.
+                // $venta->contrato->update(['estado' => 'Anulado']); 
+            }
+
+            // 5. Liberar al CLIENTE
+            // Lo regresamos a 'Prospecto' o le ponemos un estado 'Retirado'
+            // Para tu sistema actual, 'Finalizado' o regresar a 'Prospecto' funciona.
+            $venta->cliente->update(['estado' => 'Finalizado']); 
+
+            DB::commit();
+
+            return back()->with('success', 'Venta anulada correctamente. La deuda pendiente ha sido eliminada.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error al anular: ' . $e->getMessage());
+        }
     }
     public function show(Venta $venta) {}
     public function edit(Venta $venta) {}

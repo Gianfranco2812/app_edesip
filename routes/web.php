@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\GrupoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ContratoController;
+use App\Http\Controllers\CobranzaController;
 
 
 // --- 1. RUTAS PÚBLICAS ---
@@ -28,6 +29,10 @@ Auth::routes();
 // --- 2. RUTAS PROTEGIDAS (Requieren Login) ---
 
 Route::middleware(['auth'])->group(function () {
+
+    Route::get('/perfil', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/perfil/info', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/perfil/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
 
 
     Route::get('/dashboard', function() {
@@ -55,6 +60,10 @@ Route::middleware(['auth'])->group(function () {
         
         Route::resource('clientes', ClienteController::class); 
         Route::resource('ventas', VentaController::class);
+        Route::put('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
+        Route::get('/cobranzas', [CobranzaController::class, 'index'])->name('cobranzas.index');
+        Route::get('/cobranzas/{cuota}/pagar', [CobranzaController::class, 'edit'])->name('cobranzas.edit');
+        Route::put('/cobranzas/{cuota}', [CobranzaController::class, 'update'])->name('cobranzas.update');
 
     });
 

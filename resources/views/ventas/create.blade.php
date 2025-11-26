@@ -9,7 +9,12 @@
         <div class="col-md-12">
         <div class="card">
             <div class="card-body">
-            
+            @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            @endif
             <form action="{{ route('ventas.store') }}" method="POST">
                 @csrf
 

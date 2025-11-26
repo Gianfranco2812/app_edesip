@@ -67,10 +67,34 @@
                     @endrole
                     <td>
                         <div class="form-button-action">
+
+                        @if($venta->contrato && $venta->contrato->estado == 'Pendiente')
+                            <a href="{{ route('contratos.mostrar', $venta->contrato->token_acceso) }}" 
+                            target="_blank"
+                            data-bs-toggle="tooltip" 
+                            title="Abrir Contrato" 
+                            class="btn btn-link btn-secondary btn-lg">
+                            <i class="fas fa-file-signature"></i>
+                            </a>
+                        @endif
+                        <div class="form-button-action">
                         <a href="#" data-bs-toggle="tooltip" title="Ver Detalle" class="btn btn-link btn-info btn-lg">
                             <i class="fa fa-eye"></i>
                         </a>
                         </div>
+                        @if($venta->estado != 'Anulada')
+                            <form action="{{ route('ventas.anular', $venta->id) }}" method="POST" style="display:inline;">
+                                @csrf
+                                @method('PUT')
+                                <button type="submit" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Anular" 
+                                        class="btn btn-link btn-warning" 
+                                        onclick="return confirm('¿Confirmas el retiro del alumno? Se cancelarán las cuotas pendientes.');">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </form>
+                        @endif
                     </td>
                     </tr>
                     @empty
