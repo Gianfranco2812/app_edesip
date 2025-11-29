@@ -20,6 +20,7 @@ class Cliente extends Model
         'fecha_nacimiento',
         'estado',
         'creado_por_vendedor_id',
+        'user_id'
     ];
 
     
@@ -45,5 +46,10 @@ class Cliente extends Model
     public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . $this->apellido;
+    }
+    
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

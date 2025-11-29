@@ -12,6 +12,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\CobranzaController;
+use App\Http\Controllers\PortalController;
 
 
 // --- 1. RUTAS PÚBLICAS ---
@@ -35,9 +36,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/perfil/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
 
 
-    Route::get('/dashboard', function() {
-        return view('dashboard'); 
-    })->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
 
     // --- 3. RUTAS DE ADMINISTRACIÓN (SOLO ROL 'Admin') ---
@@ -64,7 +63,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/cobranzas', [CobranzaController::class, 'index'])->name('cobranzas.index');
         Route::get('/cobranzas/{cuota}/pagar', [CobranzaController::class, 'edit'])->name('cobranzas.edit');
         Route::put('/cobranzas/{cuota}', [CobranzaController::class, 'update'])->name('cobranzas.update');
+        Route::get('/cobranzas/{venta}', [CobranzaController::class, 'show'])->name('cobranzas.show');
 
+    });
+
+    Route::middleware(['role:Cliente'])->group(function () {
+        Route::get('/mi-portal', [App\Http\Controllers\PortalController::class, 'index'])->name('portal.index');
     });
 
 

@@ -28,14 +28,26 @@
                     @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
+
+                <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Usuario de Acceso (DNI)</label>
+                    <input type="text" class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username ?? '') }}" placeholder="Ej: 45896321" required>
+                    <small class="text-muted">Este será el dato para iniciar sesión.</small>
+                    @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email ?? '') }}" required>
-                    @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <label for="email" class="form-label">Email (Contacto)</label>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email ?? '') }}" required>
+                        @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
-                </div>
+            </div>
 
                 <div class="row">
                 <div class="col-md-6">

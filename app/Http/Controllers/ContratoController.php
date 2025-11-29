@@ -8,6 +8,9 @@ use App\Models\Cuota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 
 class ContratoController extends Controller
@@ -60,7 +63,7 @@ class ContratoController extends Controller
 
             // 5. Generar COBRANZA (Plan de Pagos)
             $this->generarPlanDePagos($venta);
-
+            $this->crearUsuarioAlumno($venta->cliente);
             // 6. Si todo salió bien, confirma la transacción
             DB::commit();
 
@@ -86,7 +89,10 @@ class ContratoController extends Controller
         $nroCuotas = $venta->nro_cuotas_venta;
         
         $montoFinanciado = $costoTotal - $matricula;
-        $fechaVencimiento = Carbon::parse($venta->grupo->fecha_inicio); // Empezamos a cobrar desde el inicio
+        
+        // La fecha base es el inicio del curso
+        // Usamos copy() para no alterar la fecha original si la necesitamos después
+        $fechaBase = Carbon::parse($venta->grupo->fecha_inicio); 
 
         // 1. Crear la cuota de Matrícula (si aplica)
         if ($matricula > 0) {
@@ -94,39 +100,39 @@ class ContratoController extends Controller
                 'venta_id' => $venta->id,
                 'descripcion' => 'Matrícula',
                 'monto_cuota' => $matricula,
-                'fecha_vencimiento' => $fechaVencimiento, // La matrícula se paga al inicio
+                'fecha_vencimiento' => $fechaBase, // Vence el día de inicio
                 'estado_cuota' => 'Pendiente',
             ]);
         }
 
-        // 2. Calcular las cuotas del saldo (si nroCuotas > 0)
-        // Si la matrícula fue el costo total (pago único), nroCuotas del saldo es 0
+        // 2. Calcular las cuotas del saldo
         if ($nroCuotas > 0 && $montoFinanciado > 0) {
             
-            // Si la matrícula fue 0, el nroCuotas se aplica al total
-            // Si la matrícula fue > 0, (nroCuotas - 1) se aplica al saldo? 
-            // Asumiremos que 'nro_cuotas_venta' es el TOTAL de pagos (incluyendo matrícula si es > 0)
+            // Asumimos que 'nro_cuotas_venta' es el TOTAL de pagos
+            // Si hay matrícula, las cuotas restantes son (Total - 1)
+            $nroCuotasReales = $nroCuotas;
             
-            $nroCuotasReales = ($matricula > 0) ? $nroCuotas - 1 : $nroCuotas;
-            if ($nroCuotasReales <= 0) { // Caso pago total = matrícula
-                return;
-            }
+            if ($nroCuotasReales > 0) {
+                $montoPorCuota = $montoFinanciado / $nroCuotasReales;
+                
+                // --- CORRECCIÓN AQUÍ ---
+                // Antes hacíamos $fechaBase->addMonth() aquí. LO QUITAMOS.
+                // Ahora usamos una variable temporal para iterar.
+                
+                $fechaCuota = $fechaBase->copy(); // Empezamos en la fecha de inicio
 
-            $montoPorCuota = $montoFinanciado / $nroCuotasReales;
-            
-            // Avanzamos el vencimiento al siguiente mes para la Cuota 1
-            $fechaVencimiento->addMonth(); 
-
-            for ($i = 1; $i <= $nroCuotasReales; $i++) {
-                Cuota::create([
-                    'venta_id' => $venta->id,
-                    'descripcion' => "Cuota $i de $nroCuotasReales",
-                    'monto_cuota' => $montoPorCuota,
-                    'fecha_vencimiento' => $fechaVencimiento,
-                    'estado_cuota' => 'Pendiente',
-                ]);
-                // Siguiente vencimiento en 1 mes
-                $fechaVencimiento->addMonth();
+                for ($i = 1; $i <= $nroCuotasReales; $i++) {
+                    Cuota::create([
+                        'venta_id' => $venta->id,
+                        'descripcion' => "Cuota $i de $nroCuotasReales",
+                        'monto_cuota' => $montoPorCuota,
+                        'fecha_vencimiento' => $fechaCuota, // Cuota 1 = Fecha Inicio
+                        'estado_cuota' => 'Pendiente',
+                    ]);
+                    
+                    // DESPUÉS de crear la cuota, sumamos un mes para la siguiente
+                    $fechaCuota->addMonth();
+                }
             }
         }
     }
@@ -137,5 +143,34 @@ class ContratoController extends Controller
     public function exito()
     {
         return view('contratos.exito'); // Crearemos esta vista
+    }
+
+    private function crearUsuarioAlumno($cliente)
+    {
+        if ($cliente->user_id) return;
+
+        // Usamos el DNI como usuario. Si no tiene DNI, usamos el email como fallback.
+        $usuarioLogin = $cliente->numero_documento ?? $cliente->email;
+        
+        // Buscamos por username O por email para no duplicar
+        $user = User::where('username', $usuarioLogin)
+                    ->orWhere('email', $cliente->email)
+                    ->first();
+
+        if (!$user) {
+            // Contraseña = DNI
+            $password = $cliente->numero_documento ?? '12345678'; 
+            
+            $user = User::create([
+                'name' => $cliente->nombre_completo,
+                'email' => $cliente->email, // Seguimos guardando el email para notificaciones
+                'username' => $usuarioLogin, // <-- AQUÍ GUARDAMOS EL DNI
+                'password' => Hash::make($password),
+            ]);
+            
+            $user->assignRole('Cliente');
+        }
+
+        $cliente->update(['user_id' => $user->id]);
     }
 }

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Venta;
 use App\Models\Cuota;
+use App\Models\Grupo; 
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\Programa;
@@ -11,91 +14,106 @@ use App\Models\Programa;
 class CobranzaController extends Controller
 {
     public function index(Request $request)
-{
-    // 1. Iniciamos la consulta base
-    $query = Cuota::with(['venta.cliente', 'venta.grupo.programa']);
+    {
+        // Consulta base: Ventas activas
+        $query = Venta::with(['cliente', 'grupo.programa', 'vendedor', 'cuotas' => function($q) {
+            $q->where('estado_cuota', '!=', 'Pagada')
+                ->orderBy('fecha_vencimiento', 'asc');
+        }])->where('estado', '!=', 'Anulada');
 
-    // --- FILTRO DE SEGURIDAD (Admin vs Asesor) ---
-    if (!Auth::user()->hasRole('Admin')) {
-        $query->whereHas('venta', function($q) {
-            $q->where('vendedor_id', Auth::id());
-        });
-    }
+        // --- 1. SEGURIDAD (Rol) ---
+        if (!Auth::user()->hasRole('Admin')) {
+            $query->where('vendedor_id', Auth::id());
+        }
 
-    // --- 2. BUSCADOR GENERAL (Nombre, Apellido, DNI, Código Grupo) ---
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->whereHas('venta', function($qVenta) use ($search) {
-            // Buscamos en Cliente
-            $qVenta->whereHas('cliente', function($qCliente) use ($search) {
-                $qCliente->where('nombre', 'like', "%$search%")
-                            ->orWhere('apellido', 'like', "%$search%")
-                            ->orWhere('numero_documento', 'like', "%$search%");
-            })
-            // O buscamos por Código de Grupo
-            ->orWhereHas('grupo', function($qGrupo) use ($search) {
-                $qGrupo->where('codigo_grupo', 'like', "%$search%");
+        // --- 2. BUSCADOR (Texto) ---
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($qMain) use ($search) {
+                $qMain->whereHas('cliente', function($q) use ($search) {
+                    $q->where('nombre', 'like', "%$search%")
+                        ->orWhere('apellido', 'like', "%$search%")
+                        ->orWhere('numero_documento', 'like', "%$search%");
+                })->orWhereHas('grupo', function($q) use ($search) {
+                    $q->where('codigo_grupo', 'like', "%$search%");
+                });
             });
-        });
-    }
+        }
 
-    // --- 3. FILTRO POR PROGRAMA ---
-    if ($request->filled('programa_id')) {
-        $query->whereHas('venta.grupo', function($q) use ($request) {
-            $q->where('programa_id', $request->programa_id);
-        });
-    }
+        // --- 3. FILTRO POR ASESOR (Solo Admin) ---
+        if (Auth::user()->hasRole('Admin') && $request->filled('vendedor_id')) {
+            $query->where('vendedor_id', $request->vendedor_id);
+        }
 
-    // --- 4. FILTRO POR ESTADO ---
-    if ($request->filled('estado')) {
-            switch ($request->estado) {
-                case 'Pagada':
-                    $query->where('estado_cuota', 'Pagada');
-                    break;
-                
-                case 'Vencida':
-                    // Busca cuotas que siguen "Pendiente" PERO cuya fecha ya pasó
-                    $query->where('estado_cuota', 'Pendiente')
-                        ->whereDate('fecha_vencimiento', '<', now());
-                    break;
-                
-                case 'PorVencer':
-                    // Busca cuotas "Pendiente" cuya fecha es HOY o Futura
-                    $query->where('estado_cuota', 'Pendiente')
-                        ->whereDate('fecha_vencimiento', '>=', now());
+        // --- 4. FILTRO POR GRUPO ---
+        if ($request->filled('grupo_id')) {
+            $query->where('grupo_id', $request->grupo_id);
+        }
+
+        // --- 5. FILTRO POR ESTADO DE DEUDA (SEMÁFORO) ---
+        // Aquí ocurre la magia para filtrar R/N/V en la base de datos
+        if ($request->filled('estado_deuda')) {
+            $hoy = now()->startOfDay();
+            $limitePronto = now()->addDays(3)->endOfDay(); // Definimos "Pronto" como 3 días
+
+            switch ($request->estado_deuda) {
+                case 'vencido': // ROJO
+                    // Ventas que tienen AL MENOS UNA cuota vencida pendiente
+                    $query->whereHas('cuotas', function($q) use ($hoy) {
+                        $q->where('estado_cuota', '!=', 'Pagada')
+                            ->whereDate('fecha_vencimiento', '<', $hoy);
+                    });
                     break;
 
-                case 'TodasPendientes':
-                    // Muestra todo lo que se debe (Vencido y Por Vencer)
-                    $query->where('estado_cuota', 'Pendiente');
+                case 'por_vencer': // NARANJA
+                    // Ventas con cuotas próximas... Y SIN cuotas vencidas (si no, sería rojo)
+                    $query->whereHas('cuotas', function($q) use ($hoy, $limitePronto) {
+                        $q->where('estado_cuota', '!=', 'Pagada')
+                            ->whereBetween('fecha_vencimiento', [$hoy, $limitePronto]);
+                    })->whereDoesntHave('cuotas', function($q) use ($hoy) {
+                        $q->where('estado_cuota', '!=', 'Pagada')
+                            ->whereDate('fecha_vencimiento', '<', $hoy);
+                    });
+                    break;
+
+                case 'al_dia': // VERDE
+                    // Ventas que NO tienen nada vencido ni próximo a vencer
+                    $query->whereDoesntHave('cuotas', function($q) use ($limitePronto) {
+                        $q->where('estado_cuota', '!=', 'Pagada')
+                            ->whereDate('fecha_vencimiento', '<=', $limitePronto);
+                    });
                     break;
             }
-        } else {
-            // --- COMPORTAMIENTO POR DEFECTO ---
-            
-            // Si no hay búsqueda de texto, mostramos solo lo que se debe (Pendiente + Vencido)
-            // Si el usuario busca "Juan", mostramos TODO (incluyendo sus pagadas)
-            if (!$request->filled('search')) {
-                $query->where('estado_cuota', 'Pendiente');
-            }
+        }
+
+        // Ejecutar
+        $ventas = $query->latest()->paginate(20);
+
+        // --- DATOS PARA DROPDOWNS ---
+        // Grupos activos o próximos
+        $grupos = Grupo::with('programa')->where('estado', '!=', 'Cancelado')->get();
+        
+        // Vendedores
+        $vendedores = [];
+        if (Auth::user()->hasRole('Admin')) {
+            $vendedores = User::role(['Asesor', 'Admin'])->get();
+        }
+
+        return view('cobranzas.index', compact('ventas', 'grupos', 'vendedores'));
     }
 
-    // --- 5. FILTRO POR FECHAS (Vencimiento) ---
-    if ($request->filled('fecha_inicio')) {
-        $query->whereDate('fecha_vencimiento', '>=', $request->fecha_inicio);
+
+    public function show($id)
+    {
+        $venta = Venta::with(['cliente', 'grupo', 'cuotas'])->findOrFail($id);
+
+        // Seguridad: Asesor solo ve sus ventas
+        if (!Auth::user()->hasRole('Admin') && $venta->vendedor_id != Auth::id()) {
+            abort(403);
+        }
+
+        return view('cobranzas.show', compact('venta'));
     }
-    if ($request->filled('fecha_fin')) {
-        $query->whereDate('fecha_vencimiento', '<=', $request->fecha_fin);
-    }
-
-    // Ordenar y ejecutar
-    $cuotas = $query->orderBy('fecha_vencimiento', 'asc')->paginate(20); // Usamos paginación mejor
-
-    // Obtenemos los programas para el dropdown del filtro
-    $programas = Programa::where('estado', 'Activo')->get();
-
-    return view('cobranzas.index', compact('cuotas', 'programas'));
-}
 
     /**
      * Muestra el formulario para registrar un pago.
@@ -132,7 +150,7 @@ class CobranzaController extends Controller
             // pero por ahora asumimos pago completo.
         ]);
 
-        return redirect()->route('cobranzas.index')
-                            ->with('success', 'Pago registrado correctamente. La cuota ha sido saldada.');
+        return redirect()->route('cobranzas.show', $cuota->venta_id)
+                            ->with('success', 'Pago registrado correctamente.');
     }
 }

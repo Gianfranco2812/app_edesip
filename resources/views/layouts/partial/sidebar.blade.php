@@ -125,7 +125,28 @@
 
                 @endrole
             @endcanany
+            @role('Cliente')
+                <li class="nav-section">
+                <span class="sidebar-mini-icon">
+                    <i class="fa fa-ellipsis-h"></i>
+                </span>
+                <h4 class="text-section">MI CUENTA</h4>
+                </li>
 
+                <li class="nav-item {{ (request()->is('mi-portal*')) ? 'active' : '' }}">
+                <a href="{{ route('portal.index') }}">
+                    <i class="fas fa-laptop-house"></i>
+                    <p>Mi Portal</p>
+                </a>
+                </li>
+                
+                <li class="nav-item {{ (request()->is('perfil*')) ? 'active' : '' }}">
+                <a href="{{ route('profile.edit') }}">
+                    <i class="fas fa-user-cog"></i>
+                    <p>Mis Datos</p>
+                </a>
+                </li>
+                @endrole
             </ul>
         </div>
     </div>

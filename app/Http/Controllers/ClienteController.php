@@ -4,24 +4,65 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Cliente;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class ClienteController extends Controller
 {
     // Muestra la lista de clientes
-    public function index()
+    public function index(Request $request)
     {
-        // El Admin ve TODOS los clientes
-        if (Auth::user()->hasRole('Admin')) {
-            $clientes = Cliente::with('vendedor')->get();
-        } else {
-            // El Asesor ve SOLO los clientes que él creó
-            $clientes = Cliente::where('creado_por_vendedor_id', Auth::id())
-                                ->with('vendedor')
-                                ->get();
+        // 1. Iniciamos la consulta base con la relación del vendedor
+        $query = Cliente::with('vendedor');
+
+        // --- FILTRO DE SEGURIDAD (Rol) ---
+        // Si NO es Admin, forzamos a que solo vea sus propios registros
+        if (!Auth::user()->hasRole('Admin')) {
+            $query->where('creado_por_vendedor_id', Auth::id());
         }
-        
-        return view('clientes.index', compact('clientes'));
+
+        // --- 2. BUSCADOR DE TEXTO (Nombre, Apellido, DNI, Teléfono) ---
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nombre', 'like', "%$search%")
+                    ->orWhere('apellido', 'like', "%$search%")
+                    ->orWhere('numero_documento', 'like', "%$search%")
+                    ->orWhere('telefono', 'like', "%$search%");
+            });
+        }
+
+        // --- 3. FILTRO POR ASESOR (Solo para Admin) ---
+        // El Admin puede elegir ver los clientes de un vendedor específico
+        if (Auth::user()->hasRole('Admin') && $request->filled('vendedor_id')) {
+            $query->where('creado_por_vendedor_id', $request->vendedor_id);
+        }
+
+        // --- 4. FILTRO POR FECHAS (Registro) ---
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('created_at', '>=', $request->fecha_inicio);
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('created_at', '<=', $request->fecha_fin);
+        }
+
+        // --- 5. FILTRO POR ESTADO (Opcional pero útil) ---
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        // Ejecutar consulta y paginar
+        $clientes = $query->latest()->paginate(20);
+
+        // --- DATOS PARA EL FORMULARIO DE FILTROS ---
+        // Obtenemos la lista de usuarios que tienen rol 'Asesor' (para el dropdown del Admin)
+        // (Asumiendo que usas Spatie, podemos filtrar por rol, o traer todos los users)
+        $vendedores = [];
+        if (Auth::user()->hasRole('Admin')) {
+            $vendedores = User::role('Asesor')->get(); 
+        }
+
+        return view('clientes.index', compact('clientes', 'vendedores'));
     }
 
     // Muestra el formulario de creación

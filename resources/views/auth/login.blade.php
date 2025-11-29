@@ -148,19 +148,29 @@
                     @csrf
 
                     <div class="form-floating mb-4">
-                        <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                id="email" name="email" placeholder="name@example.com" 
-                                value="{{ old('email') }}" required autofocus>
-                        <label for="email">Correo Electrónico</label>
-                        @error('email')
+                        <input id="username" 
+                            type="text" 
+                            class="form-control @error('username') is-invalid @enderror" 
+                            name="username" 
+                            value="{{ old('username') }}" 
+                            placeholder="Usuario"
+                            required autofocus>
+                        <label for="username">Usuario</label>
+
+                        @error('username')
                             <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                         @enderror
                     </div>
 
                     <div class="form-floating mb-4">
-                        <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                id="password" name="password" placeholder="Password" required>
+                        <input type="password" 
+                            class="form-control @error('password') is-invalid @enderror" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Contraseña" 
+                            required>
                         <label for="password">Contraseña</label>
+
                         @error('password')
                             <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                         @enderror

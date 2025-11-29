@@ -13,9 +13,26 @@ use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('roles')->get();
+        // 1. Iniciamos la consulta base cargando los roles (para evitar N+1)
+        $query = User::with('roles');
+
+        // 2. BUSCADOR INTELIGENTE
+        if ($request->filled('search')) {
+            $search = $request->search;
+            
+            // Agrupamos los 'OR' dentro de un paréntesis para no romper otras condiciones futuras
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")      // Busca por Nombre
+                  ->orWhere('email', 'like', "%{$search}%")   // Busca por Email
+                  ->orWhere('username', 'like', "%{$search}%"); // Busca por DNI/Usuario
+            });
+        }
+
+        // 3. Ejecutar y paginar (ordenado por los más nuevos)
+        $users = $query->latest()->paginate(10);
+
         return view('admin.usuarios.index', compact('users'));
     }
 
@@ -29,18 +46,21 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            // NUEVO: Validar username único
+            'username' => 'required|string|max:255|unique:users', 
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed', 
-            'role' => 'required|string', 
+            'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|string',
         ]);
 
         $user = User::create([
             'name' => $request->name,
+            'username' => $request->username, // <-- AGREGAR ESTO
             'email' => $request->email,
-            'password' => Hash::make($request->password), 
+            'password' => Hash::make($request->password),
         ]);
 
-        $user->assignRole($request->role); 
+        $user->assignRole($request->role);
 
         return redirect()->route('usuarios.index')->with('success', 'Usuario creado exitosamente.');
     }
@@ -63,24 +83,25 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $usuario->id, 
-            'password' => 'nullable|string|min:8|confirmed', 
+            // NUEVO: Validar unique ignorando al usuario actual
+            'username' => 'required|string|max:255|unique:users,username,' . $usuario->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $usuario->id,
+            'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|string',
         ]);
 
         $data = [
             'name' => $request->name,
+            'username' => $request->username, // <-- AGREGAR ESTO
             'email' => $request->email,
         ];
 
-        
         if (!empty($request->password)) {
             $data['password'] = Hash::make($request->password);
         }
 
-        $usuario->update($data); 
-
-        $usuario->syncRoles($request->role); 
+        $usuario->update($data);
+        $usuario->syncRoles($request->role);
 
         return redirect()->route('usuarios.index')->with('success', 'Usuario actualizado exitosamente.');
     }

@@ -25,8 +25,17 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/dashboard';
+    //protected $redirectTo = '/dashboard';
+    public function redirectTo()
+    {
+        // 1. Si es CLIENTE (Alumno), va a su portal
+        if (auth()->user()->hasRole('Cliente')) {
+            return route('portal.index'); // O '/mi-portal'
+        }
 
+        // 2. Si es ADMIN o ASESOR, va al Dashboard administrativo
+        return route('dashboard'); // O '/dashboard'
+    }
     /**
      * Create a new controller instance.
      *
@@ -36,5 +45,9 @@ class LoginController extends Controller
     {
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
+    }
+    public function username()
+    {
+        return 'username';
     }
 }

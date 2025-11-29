@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Cliente; 
 use App\Models\Grupo;
+use App\Models\Programa; 
+use App\Models\User;
 use Illuminate\Support\Facades\DB; 
 use Illuminate\Support\Str; 
 use Carbon\Carbon;
@@ -19,23 +21,71 @@ class VentaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Usamos with() para cargar las relaciones y evitar N+1 queries
-        // Cargamos el cliente, el grupo (y el programa dentro del grupo) y el vendedor
-        $query = Venta::with(['cliente', 'grupo.programa', 'vendedor']);
+        // 1. Iniciamos la consulta cargando relaciones
+        $query = Venta::with(['cliente', 'grupo.programa', 'vendedor', 'contrato']);
 
-        // El Admin ve TODAS las ventas
-        if (Auth::user()->hasRole('Admin')) {
-            $ventas = $query->latest()->get(); // latest() ordena por fecha de creación desc
-        } else {
-            // El Asesor ve SOLO sus ventas
-            $ventas = $query->where('vendedor_id', Auth::id())
-                            ->latest()
-                            ->get();
+        // --- FILTRO DE SEGURIDAD (Rol) ---
+        if (!Auth::user()->hasRole('Admin')) {
+            $query->where('vendedor_id', Auth::id());
         }
 
-        return view('ventas.index', compact('ventas'));
+        // --- 2. BUSCADOR DE TEXTO (Cliente o Grupo) ---
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($qMain) use ($search) {
+                // Busca por nombre/dni del cliente...
+                $qMain->whereHas('cliente', function($q) use ($search) {
+                    $q->where('nombre', 'like', "%$search%")
+                        ->orWhere('apellido', 'like', "%$search%")
+                        ->orWhere('numero_documento', 'like', "%$search%");
+                })
+                // ... O busca por el código del grupo
+                ->orWhereHas('grupo', function($q) use ($search) {
+                    $q->where('codigo_grupo', 'like', "%$search%");
+                });
+            });
+        }
+
+        // --- 3. FILTRO POR PROGRAMA ---
+        if ($request->filled('programa_id')) {
+            $query->whereHas('grupo', function($q) use ($request) {
+                $q->where('programa_id', $request->programa_id);
+            });
+        }
+
+        // --- 4. FILTRO POR ESTADO ---
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        // --- 5. FILTRO POR VENDEDOR (Solo Admin) ---
+        if (Auth::user()->hasRole('Admin') && $request->filled('vendedor_id')) {
+            $query->where('vendedor_id', $request->vendedor_id);
+        }
+
+        // --- 6. FILTRO POR FECHAS ---
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('fecha_venta', '>=', $request->fecha_inicio);
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('fecha_venta', '<=', $request->fecha_fin);
+        }
+
+        // Ejecutar (Ordenamos por fecha venta descendente)
+        $ventas = $query->latest('fecha_venta')->paginate(20);
+
+
+        // --- DATOS PARA LOS DROPDOWNS ---
+        $programas = Programa::where('estado', 'Activo')->get();
+        
+        $vendedores = [];
+        if (Auth::user()->hasRole('Admin')) {
+            $vendedores = User::role(['Asesor', 'Admin'])->get();
+        }
+
+        return view('ventas.index', compact('ventas', 'programas', 'vendedores'));
     }
 
     // ... (Aquí dejaremos los otros métodos vacíos por ahora)
