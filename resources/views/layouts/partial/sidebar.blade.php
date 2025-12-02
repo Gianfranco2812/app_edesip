@@ -147,6 +147,14 @@
                 </a>
                 </li>
                 @endrole
+                @role('Admin|Asesor')
+                <li class="nav-item {{ (request()->is('reportes*')) ? 'active' : '' }}">
+                <a href="{{ route('reportes.index') }}">
+                    <i class="fas fa-chart-bar"></i>
+                    <p>Reportes</p>
+                </a>
+                </li>
+                @endrole
             </ul>
         </div>
     </div>

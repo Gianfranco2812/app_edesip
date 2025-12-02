@@ -5,7 +5,7 @@
         <a href="{{ route('dashboard') }}" class="logo">
             
             <img
-                src="{{ asset('img/logo_edesip.png') }}" {{-- Asegúrate de subir tu imagen aquí --}}
+                src="{{ asset('img/logo.png') }}" {{-- Asegúrate de subir tu imagen aquí --}}
                 alt="Logo Edesip"
                 class="navbar-brand"
                 height="20" {{-- Ajusta la altura según necesites (ej. 30 o 40) --}}

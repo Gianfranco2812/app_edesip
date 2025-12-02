@@ -13,6 +13,10 @@ use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\CobranzaController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+
 
 
 // --- 1. RUTAS PÚBLICAS ---
@@ -31,12 +35,12 @@ Auth::routes();
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::get('/perfil', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/perfil/info', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/perfil/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::get('/perfil', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/perfil/info', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
 
-    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 
     // --- 3. RUTAS DE ADMINISTRACIÓN (SOLO ROL 'Admin') ---
@@ -65,10 +69,13 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/cobranzas/{cuota}', [CobranzaController::class, 'update'])->name('cobranzas.update');
         Route::get('/cobranzas/{venta}', [CobranzaController::class, 'show'])->name('cobranzas.show');
 
+        Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::get('/reportes/exportar/{tipo}', [ReporteController::class, 'exportar'])->name('reportes.exportar');
+
     });
 
     Route::middleware(['role:Cliente'])->group(function () {
-        Route::get('/mi-portal', [App\Http\Controllers\PortalController::class, 'index'])->name('portal.index');
+        Route::get('/mi-portal', [PortalController::class, 'index'])->name('portal.index');
     });
 
 
