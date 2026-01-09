@@ -7,45 +7,32 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
-
     use AuthenticatesUsers;
 
     /**
-     * Where to redirect users after login.
-     *
-     * @var string
+     * Donde redirigir tras el login exitoso
      */
-    //protected $redirectTo = '/dashboard';
     public function redirectTo()
     {
-        // 1. Si es CLIENTE (Alumno), va a su portal
-        if (auth()->user()->hasRole('Cliente')) {
-            return route('portal.index'); // O '/mi-portal'
+        $user = auth()->user();
+
+        // 1. Si es CLIENTE, va a su portal
+        if ($user->hasRole('Cliente')) {
+            return route('portal.home'); 
         }
 
-        // 2. Si es ADMIN o ASESOR, va al Dashboard administrativo
-        return route('dashboard'); // O '/dashboard'
+        // 2. Si es ADMIN o ASESOR, va al Dashboard
+        // Asegúrate de que la ruta 'dashboard' esté definida en web.php
+        return route('dashboard'); 
     }
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
+
     public function __construct()
     {
+        // IMPORTANTE: El login debe usar 'guest', NO 'auth'
+        // Esto permite que solo personas NO logueadas vean el formulario de login
         $this->middleware('guest')->except('logout');
-        $this->middleware('auth')->only('logout');
     }
+
     public function username()
     {
         return 'username';

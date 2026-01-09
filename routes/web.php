@@ -16,6 +16,7 @@ use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminPagoController;
 
 
 
@@ -25,8 +26,9 @@ use App\Http\Controllers\DashboardController;
 Route::get('/', function () {
     return redirect()->route('login');
 });
-Route::get('contrato/confirmar/{token_acceso}', [ContratoController::class, 'mostrar'])->name('contratos.mostrar');
-Route::post('contrato/confirmar/{token_acceso}', [ContratoController::class, 'confirmar'])->name('contratos.confirmar');
+Route::get('/firmar-contrato/{token}', [ContratoController::class, 'vistaPublica'])->name('contratos.publico');
+Route::post('/firmar-contrato/{token}/procesar', [ContratoController::class, 'procesarFirma'])->name('contratos.procesar');
+Route::get('/ventas/{id}/previsualizar-contrato', [VentaController::class, 'previsualizar'])->name('ventas.previsualizar');
 
 Auth::routes();
 
@@ -40,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
 
 
     // --- 3. RUTAS DE ADMINISTRACIÓN (SOLO ROL 'Admin') ---
@@ -61,6 +63,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:Admin|Asesor'])->group(function () {
         
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        
         Route::resource('clientes', ClienteController::class); 
         Route::resource('ventas', VentaController::class);
         Route::put('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
@@ -72,11 +76,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
         Route::get('/reportes/exportar/{tipo}', [ReporteController::class, 'exportar'])->name('reportes.exportar');
 
+        Route::post('/admin/pagos/{id}/aprobar', [AdminPagoController::class, 'aprobar'])->name('pagos.aprobar');
+        Route::post('/admin/pagos/{id}/rechazar', [AdminPagoController::class, 'rechazar'])->name('pagos.rechazar');
+
     });
 
-    Route::middleware(['role:Cliente'])->group(function () {
-        Route::get('/mi-portal', [PortalController::class, 'index'])->name('portal.index');
-    });
+    Route::middleware(['auth', 'role:Cliente'])->prefix('portal')->name('portal.')->group(function () {
+
+        Route::get('/home', [PortalController::class, 'index'])->name('home');
+        Route::get('/pagos', [PortalController::class, 'pagos'])->name('pagos');
+        Route::get('/mis-datos', [PortalController::class, 'perfil'])->name('perfil');
+        Route::post('/pagos/reportar', [PortalController::class, 'reportarPago'])->name('pagos.reportar');
+
+});
 
 
 });

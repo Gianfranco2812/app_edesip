@@ -70,12 +70,75 @@
                         @endif
                     </td>
                     <td>
-                        @if($cuota->estado_cuota != 'Pagada')
-                            <a href="{{ route('cobranzas.edit', $cuota->id) }}" class="btn btn-success btn-sm fw-bold">
-                                Pagar
-                            </a>
+                        {{-- 1. PRIMERO: VERIFICAMOS SI YA ESTÁ PAGADA --}}
+                        @if($cuota->estado_cuota == 'Pagada')
+                            
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> PAGADA
+                            </span>
+
                         @else
-                            <button class="btn btn-light btn-sm" disabled>Saldado</button>
+                            {{-- SI NO ESTÁ PAGADA, APLICAMOS TU LÓGICA DE VALIDACIÓN O PAGO --}}
+                            
+                            @php
+                                // Buscamos si hay un reporte pendiente
+                                $reporte = $cuota->reportes->where('estado', 'Pendiente')->first();
+                            @endphp
+
+                            @if($reporte)
+                                {{-- CASO A: EL ALUMNO ENVIÓ VOUCHER (Validar) --}}
+                                <button type="button" 
+                                        class="btn btn-warning btn-sm fw-bold" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalValidar{{ $reporte->id }}">
+                                    <i class="fas fa-search-dollar"></i> Validar Voucher
+                                </button>
+
+                                {{-- MODAL DE VALIDACIÓN --}}
+                                <div class="modal fade" id="modalValidar{{ $reporte->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-warning">
+                                                <h5 class="modal-title text-dark">Validar Pago - Cuota {{ $cuota->numero_cuota }}</h5>
+                                                <button class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                <p><strong>Alumno:</strong> {{ $cliente->nombres ?? 'Cliente' }}</p>
+                                                <p><strong>Monto Reportado:</strong> S/ {{ $reporte->monto }}</p>
+                                                <p><strong>Operación:</strong> {{ $reporte->numero_operacion }} ({{ $reporte->metodo_pago }})</p>
+                                                
+                                                <div class="mb-3 border p-2">
+                                                    <img src="{{ asset('storage/' . $reporte->comprobante_imagen) }}" class="img-fluid" alt="Comprobante">
+                                                </div>
+
+                                                <div class="d-flex justify-content-between gap-2">
+                                                    {{-- RECHAZAR --}}
+                                                    <form action="{{ route('pagos.rechazar', $reporte->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-danger">Rechazar</button>
+                                                    </form>
+
+                                                    {{-- APROBAR --}}
+                                                    <form action="{{ route('pagos.aprobar', $reporte->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-success">
+                                                            <i class="fas fa-check"></i> Aprobar y Marcar Pagado
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            @else
+                                {{-- CASO B: DEUDA PENDIENTE SIN VOUCHER (Pagar Manual) --}}
+                                {{-- Este botón SOLO aparece si no está pagada y no hay reporte --}}
+                                <a href="{{ route('cobranzas.edit', $cuota->id) }}" class="btn btn-success btn-sm fw-bold">
+                                Pagar
+                                </a>
+                            @endif
+
                         @endif
                     </td>
                     </tr>

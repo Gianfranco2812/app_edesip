@@ -6,7 +6,9 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 use Spatie\Permission\Models\Role;
+use App\Models\User;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Hash;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -84,5 +86,17 @@ public function run(): void
             'realizar-pagos',
             'ver-estado-cuenta',
         ]);
+
+        $usuarioAdmin = User::firstOrCreate(
+            ['email' => 'admin@edesip.com'], // Buscamos por email
+            [
+                'name' => 'Administrador Principal',
+                'username' => 'Admin', // Tu login
+                'password' => Hash::make('Admin1234'), // Tu contraseña
+            ]
+        );
+
+        // LE ASIGNAMOS EL ROL DE ADMIN
+        $usuarioAdmin->assignRole($roleAdmin);
     }
 }

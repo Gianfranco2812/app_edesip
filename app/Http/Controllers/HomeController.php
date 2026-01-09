@@ -14,6 +14,13 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+
+        $this->middleware(function ($request, $next) {
+            if (auth()->user()->hasRole('Cliente')) {
+                return redirect()->route('portal.home');
+            }
+            return $next($request);
+        });
     }
 
     /**

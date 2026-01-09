@@ -31,10 +31,34 @@
         
         <ul class="nav nav-secondary">
 
+        @if(auth()->user()->hasRole('Cliente'))
+            
+            <li class="nav-item {{ request()->routeIs('portal.home') ? 'active' : '' }}">
+                <a href="{{ route('portal.home') }}">
+                    <i class="fas fa-home"></i>
+                    <p>Home</p>
+                </a>
+            </li>
+
+            <li class="nav-item {{ request()->routeIs('portal.pagos') ? 'active' : '' }}">
+                <a href="{{ route('portal.pagos') }}">
+                    <i class="fas fa-wallet"></i>
+                    <p>Pagos</p>
+                </a>
+            </li>
+
+            <li class="nav-item {{ request()->routeIs('portal.perfil') ? 'active' : '' }}">
+                <a href="{{ route('portal.perfil') }}">
+                    <i class="fas fa-user-circle"></i>
+                    <p>Mis Datos</p>
+                </a>
+            </li>
+        @else
+
             <li class="nav-item {{ (request()->is('dashboard')) ? 'active' : '' }}">
             <a href="{{ route('dashboard') }}" class="nav-link">
                 <i class="fas fa-home"></i>
-                <p>Home (Dashboard)</p>
+                <p>Home D</p>
             </a>
             </li>
 
@@ -125,28 +149,6 @@
 
                 @endrole
             @endcanany
-            @role('Cliente')
-                <li class="nav-section">
-                <span class="sidebar-mini-icon">
-                    <i class="fa fa-ellipsis-h"></i>
-                </span>
-                <h4 class="text-section">MI CUENTA</h4>
-                </li>
-
-                <li class="nav-item {{ (request()->is('mi-portal*')) ? 'active' : '' }}">
-                <a href="{{ route('portal.index') }}">
-                    <i class="fas fa-laptop-house"></i>
-                    <p>Mi Portal</p>
-                </a>
-                </li>
-                
-                <li class="nav-item {{ (request()->is('perfil*')) ? 'active' : '' }}">
-                <a href="{{ route('profile.edit') }}">
-                    <i class="fas fa-user-cog"></i>
-                    <p>Mis Datos</p>
-                </a>
-                </li>
-                @endrole
                 @role('Admin|Asesor')
                 <li class="nav-item {{ (request()->is('reportes*')) ? 'active' : '' }}">
                 <a href="{{ route('reportes.index') }}">
@@ -156,6 +158,7 @@
                 </li>
                 @endrole
             </ul>
+        @endif
         </div>
     </div>
 </div>

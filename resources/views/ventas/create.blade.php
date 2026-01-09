@@ -92,12 +92,12 @@
                 </div>
                 </div>
                 
-                <div class="text-end mt-4">
-                <a href="{{ route('clientes.index') }}" class="btn btn-danger">Cancelar Matrícula</a>
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-file-signature"></i>
-                    Generar Contrato y Matricular
-                </button>
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ route('ventas.index') }}" class="btn btn-secondary">Cancelar</a>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                        <i class="fas fa-file-contract me-2"></i> GENERAR CONTRATO Y MATRICULAR
+                    </button>
                 </div>
             </form>
 

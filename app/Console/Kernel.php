@@ -12,6 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->command('cobranza:verificar')->dailyAt('08:00');
         // $schedule->command('inspire')->hourly();
     }
 
@@ -24,4 +25,5 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
     }
+    
 }

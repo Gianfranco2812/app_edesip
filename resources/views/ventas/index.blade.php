@@ -137,28 +137,26 @@
                     @endrole
                     <td>
                         <div class="form-button-action">
-                        
-                        {{-- FIRMAR (Si pendiente) --}}
-                        @if($venta->contrato && $venta->contrato->estado == 'Pendiente' && $venta->estado != 'Anulada')
-                            <a href="{{ route('contratos.mostrar', $venta->contrato->token_acceso) }}" 
-                            target="_blank"
-                            data-bs-toggle="tooltip" 
-                            title="Firmar Contrato" 
-                            class="btn btn-link btn-secondary btn-lg">
-                            <i class="fas fa-file-signature"></i>
-                            </a>
-                        @endif
-
-                        {{-- ANULAR (Si no anulada) --}}
-                        @if($venta->estado != 'Anulada')
-                            <form action="{{ route('ventas.anular', $venta->id) }}" method="POST" style="display:inline;">
-                                @csrf
-                                @method('PUT')
-                                <button type="submit" data-bs-toggle="tooltip" title="Anular" class="btn btn-link btn-warning btn-lg" onclick="return confirm('¿Retirar alumno?');">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </form>
-                        @endif
+                            
+                            
+                            @if($venta->contrato && $venta->contrato->estado == 'Pendiente' && $venta->estado != 'Anulada')
+                                <a href="{{ route('ventas.previsualizar', $venta->id) }}" 
+                                class="btn btn-warning btn-sm fw-bold me-1"
+                                data-bs-toggle="tooltip" 
+                                title="Gestionar Firma / Enviar Link">
+                                    <i class="fas fa-file-contract text-dark"></i>
+                                </a>
+                            @endif
+                            
+                            @if($venta->contrato && $venta->contrato->estado == 'Firmado' && $venta->contrato->ruta_pdf)
+                                <a href="{{ asset('storage/' . $venta->contrato->ruta_pdf) }}" 
+                                target="_blank"
+                                class="btn btn-success btn-sm me-1"
+                                data-bs-toggle="tooltip"
+                                title="Ver Contrato Firmado (PDF)">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            @endif
                         
                         {{-- ELIMINAR (Solo Admin) --}}
                         @role('Admin')

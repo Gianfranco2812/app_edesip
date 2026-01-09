@@ -40,4 +40,16 @@ class Cuota extends Model
     {
         return $this->belongsTo(Venta::class, 'venta_id');
     }
+    
+    public function reportes()
+    {
+        return $this->hasMany(ReportePago::class, 'cuota_id');
+    }
+
+    // Helper: Para saber rápido si tiene algo pendiente
+    public function getTieneReportePendienteAttribute()
+    {
+        // Retorna el primer reporte que esté en estado 'Pendiente'
+        return $this->reportes->where('estado', 'Pendiente')->first();
+    }
 }

@@ -6,171 +6,151 @@ use App\Models\Contrato;
 use App\Models\Venta;
 use App\Models\Cuota;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 
 class ContratoController extends Controller
 {
-    public function mostrar($token_acceso)
-    {
-        $contrato = Contrato::where('token_acceso', $token_acceso)->firstOrFail();
 
-        // Seguridad: Si el contrato ya está 'Confirmado', no se puede volver a firmar.
-        if ($contrato->estado == 'Confirmado') {
-            return view('contratos.confirmado', compact('contrato'))
-                    ->with('warning', 'Este contrato ya fue confirmado anteriormente.');
+    public function vistaPublica($token)
+    {
+        // Traemos el contrato con los datos de la venta, cliente y programa
+        $contrato = Contrato::with('venta.cliente', 'venta.grupo.programa')
+                            ->where('token_acceso', $token)
+                            ->firstOrFail();
+        
+        // Si ya firmó, no mostramos el contrato, mostramos login o aviso
+        if ($contrato->estado === 'Firmado') {
+            return redirect()->route('login')->with('info', 'Este contrato ya fue firmado.');
         }
 
-        // Mostramos la vista de confirmación
-        return view('contratos.mostrar', compact('contrato'));
+        return view('contratos.firmar', compact('contrato'));
     }
 
-    /**
-     * PASO 4: Procesa la confirmación ("magia")
-     * (Se ejecuta cuando el cliente presiona "Aceptar").
-     */
-    public function confirmar(Request $request, $token_acceso)
+    // -------------------------------------------------------------------------
+    // 2. ORQUESTADOR (El método que ejecuta todo al dar clic en "Firmar")
+    // -------------------------------------------------------------------------
+    public function procesarFirma(Request $request, $token)
     {
-        $contrato = Contrato::where('token_acceso', $token_acceso)->firstOrFail();
-
-        // Doble chequeo por si acaso
-        if ($contrato->estado == 'Confirmado') {
-            return redirect()->route('contratos.mostrar', $contrato->token_acceso)
-                        ->with('warning', 'Este contrato ya fue confirmado anteriormente.');
-        }
-
-        // 1. Iniciar la Transacción
-        try {
-            DB::beginTransaction();
-
-            // 2. Confirmar CONTRATO
-            $contrato->update([
-                'estado' => 'Confirmado',
-                'fecha_confirmacion' => now(),
-                'ip_confirmacion' => $request->ip()
-            ]);
-
-            // 3. Cerrar VENTA
-            $venta = $contrato->venta; // Obtenemos la venta desde la relación
-            $venta->update(['estado' => 'Cerrada']);
-
-            // 4. Confirmar CLIENTE
-            $venta->cliente->update(['estado' => 'Confirmado']);
-
-            // 5. Generar COBRANZA (Plan de Pagos)
-            $this->generarPlanDePagos($venta);
-            $this->crearUsuarioAlumno($venta->cliente);
-            // 6. Si todo salió bien, confirma la transacción
-            DB::commit();
-
-            // (Aquí iría la lógica de enviar el email con el PDF)
-            // Mail::to($venta->cliente->email)->send(new ContratoConfirmado($contrato));
-
-            // 7. Redirigir a una vista de éxito
-            return redirect()->route('contratos.exito');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error crítico al confirmar el contrato: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Función privada para generar las cuotas (Paso 4c).
-     */
-    private function generarPlanDePagos(Venta $venta)
-    {
-        $costoTotal = $venta->costo_total_venta;
-        $matricula = $venta->costo_matricula_venta;
-        $nroCuotas = $venta->nro_cuotas_venta;
-        
-        $montoFinanciado = $costoTotal - $matricula;
-        
-        // La fecha base es el inicio del curso
-        // Usamos copy() para no alterar la fecha original si la necesitamos después
-        $fechaBase = Carbon::parse($venta->grupo->fecha_inicio); 
-
-        // 1. Crear la cuota de Matrícula (si aplica)
-        if ($matricula > 0) {
-            Cuota::create([
-                'venta_id' => $venta->id,
-                'descripcion' => 'Matrícula',
-                'monto_cuota' => $matricula,
-                'fecha_vencimiento' => $fechaBase, // Vence el día de inicio
-                'estado_cuota' => 'Pendiente',
-            ]);
-        }
-
-        // 2. Calcular las cuotas del saldo
-        if ($nroCuotas > 0 && $montoFinanciado > 0) {
+        return DB::transaction(function() use ($token) {
             
-            // Asumimos que 'nro_cuotas_venta' es el TOTAL de pagos
-            // Si hay matrícula, las cuotas restantes son (Total - 1)
-            $nroCuotasReales = $nroCuotas;
-            
-            if ($nroCuotasReales > 0) {
-                $montoPorCuota = $montoFinanciado / $nroCuotasReales;
-                
-                // --- CORRECCIÓN AQUÍ ---
-                // Antes hacíamos $fechaBase->addMonth() aquí. LO QUITAMOS.
-                // Ahora usamos una variable temporal para iterar.
-                
-                $fechaCuota = $fechaBase->copy(); // Empezamos en la fecha de inicio
+            // Validaciones
+            $contrato = Contrato::with('venta.cliente')->where('token_acceso', $token)->firstOrFail();
+            $cliente = $contrato->venta->cliente;
 
-                for ($i = 1; $i <= $nroCuotasReales; $i++) {
-                    Cuota::create([
-                        'venta_id' => $venta->id,
-                        'descripcion' => "Cuota $i de $nroCuotasReales",
-                        'monto_cuota' => $montoPorCuota,
-                        'fecha_vencimiento' => $fechaCuota, // Cuota 1 = Fecha Inicio
-                        'estado_cuota' => 'Pendiente',
-                    ]);
-                    
-                    // DESPUÉS de crear la cuota, sumamos un mes para la siguiente
-                    $fechaCuota->addMonth();
-                }
+            if ($contrato->estado === 'Firmado') {
+                return back();
             }
-        }
+
+            // A. LLAMADA AL MÉTODO DE PDF (Separado)
+            $rutaPDF = $this->generarYGuardarPDF($contrato, $cliente);
+
+            // B. Actualizar BD
+            $contrato->update([
+                'estado' => 'Firmado',
+                'fecha_firma' => now(),
+                'ruta_pdf' => $rutaPDF,
+                'ip_firma' => request()->ip()
+            ]);
+
+            // C. LLAMADA AL MÉTODO DE USUARIO (Separado)
+            $datosAcceso = $this->gestionarUsuario($cliente);
+
+            // D. Retornar vista de éxito
+            return view('contratos.bienvenida', [
+                'usuario' => $datosAcceso['usuario'],
+                'password' => $datosAcceso['password'],
+                'esNuevo' => $datosAcceso['esNuevo'],
+                'ruta_pdf' => $rutaPDF
+            ]);
+        });
     }
 
-    /**
-     * Muestra la página de "Éxito".
-     */
-    public function exito()
+    // =========================================================================
+    // MÉTODO PRIVADO: GESTIONAR USUARIO (Usuario = Numero Documento)
+    // =========================================================================
+    private function gestionarUsuario($cliente)
     {
-        return view('contratos.exito'); // Crearemos esta vista
-    }
-
-    private function crearUsuarioAlumno($cliente)
-    {
-        if ($cliente->user_id) return;
-
-        // Usamos el DNI como usuario. Si no tiene DNI, usamos el email como fallback.
-        $usuarioLogin = $cliente->numero_documento ?? $cliente->email;
+        // 1. Buscamos si ya existe alguien con ese USERNAME (DNI)
+        $usuario = User::where('username', $cliente->numero_documento)->first();
+        $esNuevo = false;
         
-        // Buscamos por username O por email para no duplicar
-        $user = User::where('username', $usuarioLogin)
-                    ->orWhere('email', $cliente->email)
-                    ->first();
+        // La contraseña será el mismo número de documento
+        $password = $cliente->numero_documento; 
 
-        if (!$user) {
-            // Contraseña = DNI
-            $password = $cliente->numero_documento ?? '12345678'; 
-            
-            $user = User::create([
-                'name' => $cliente->nombre_completo,
-                'email' => $cliente->email, // Seguimos guardando el email para notificaciones
-                'username' => $usuarioLogin, // <-- AQUÍ GUARDAMOS EL DNI
+        if (!$usuario) {
+            // 2. CREAR NUEVO USUARIO
+            $usuario = User::create([
+                // Concatenamos nombre y apellido de la tabla clientes
+                'name'     => $cliente->nombre . ' ' . $cliente->apellido, 
+                
+                'email'    => $cliente->email,
+                
+                // AQUÍ ESTÁ EL CAMBIO: Usamos 'username' para guardar el DNI
+                'username' => $cliente->numero_documento,   
+                
                 'password' => Hash::make($password),
             ]);
+
+            // Asignar Rol 'Cliente' (Spatie)
+            $usuario->assignRole('Cliente');
             
-            $user->assignRole('Cliente');
+            $esNuevo = true;
         }
 
-        $cliente->update(['user_id' => $user->id]);
+        // 3. Vincular Cliente con Usuario (Actualizamos la FK en tabla clientes)
+        $cliente->user_id = $usuario->id;
+        $cliente->save();
+
+        return [
+            'usuario' => $usuario,
+            'password' => $password,
+            'esNuevo' => $esNuevo
+        ];
+    }
+
+    // =========================================================================
+    // MÉTODO PRIVADO: GENERAR PDF
+    // =========================================================================
+    private function generarYGuardarPDF($contrato, $cliente)
+    {
+        $pdf = Pdf::loadView('contratos.pdf_plantilla', [
+            'contrato' => $contrato,
+            'cliente' => $cliente,
+            'fecha' => now()->format('d/m/Y H:i')
+        ]);
+        
+        $pdf->setPaper('a4', 'portrait');
+
+        // ==============================================================
+        // 1. PERSONALIZAR EL NOMBRE DEL ARCHIVO (Apellido_DNI.pdf)
+        // ==============================================================
+        // Str::slug convierte "Pérez Gómez" en "perez-gomez" (quita tildes y espacios)
+        $apellidoLimpio = Str::slug($cliente->apellido); 
+        
+        // Resultado: perez-gomez_12345678_contrato-55.pdf
+        $nombreArchivo = strtoupper($apellidoLimpio) . '_' . $cliente->numero_documento . '_C' . $contrato->id . '.pdf';
+
+        // ==============================================================
+        // 2. MODIFICAR LA CARPETA DE DESTINO
+        // ==============================================================
+        // Si cambias 'contratos' por 'matriculas', se creará esa carpeta nueva.
+        // También puedes organizar por año: 'contratos/2026/'
+        
+        $carpeta = 'contratos'; // <--- CAMBIA ESTO AL NOMBRE QUE QUIERAS
+        
+        $rutaStorage = $carpeta . '/' . $nombreArchivo;
+
+        // Guardamos en el disco público (storage/app/public/matriculas/...)
+        Storage::disk('public')->put($rutaStorage, $pdf->output());
+
+        return $rutaStorage;
     }
 }

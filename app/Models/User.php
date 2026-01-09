@@ -46,4 +46,10 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function cliente()
+    {
+        // Esto asume que tu tabla 'clientes' tiene una columna 'user_id'
+        return $this->hasOne(Cliente::class, 'user_id'); 
+    }
 }
