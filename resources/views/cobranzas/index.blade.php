@@ -94,7 +94,6 @@
                 <tbody>
                     @forelse ($ventas as $venta)
                         @php
-                            // (LÓGICA DEL SEMÁFORO - IGUAL QUE ANTES)
                             $proximaCuota = $venta->cuotas->first();
                             $color = 'success'; $texto = 'Al día'; $icono = 'fa-check-circle';
 
@@ -133,10 +132,27 @@
                     </td>
                     <td class="fw-bold">S/ {{ number_format($venta->cuotas->sum('monto_cuota'), 2) }}</td>
                     <td class="text-end">
-                        <a href="{{ route('cobranzas.show', $venta->id) }}" class="btn btn-icon btn-round btn-primary">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                    </td>
+                            @if($venta->vouchers_por_validar > 0)
+                                <a href="{{ route('cobranzas.show', $venta->id) }}" 
+                                class="btn btn-sm btn-danger position-relative me-2"
+                                data-bs-toggle="tooltip" 
+                                title="¡Hay {{ $venta->vouchers_por_validar }} pago(s) por validar!">
+                                    
+                                    <i class="fas fa-bell fa-beat"></i>
+                                    
+                                    {{-- Opcional: El numerito en la esquina --}}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
+                                        {{ $venta->vouchers_por_validar }}
+                                    </span>
+                                </a>
+                            @endif
+
+                            {{-- Botón Normal de Ver/Gestionar --}}
+                            <a href="{{ route('cobranzas.show', $venta->id) }}" class="btn btn-sm btn-outline-primary" title="Ver Cobranza">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                        </td>
                     </tr>
                     @empty
                     <tr><td colspan="6" class="text-center p-4">No se encontraron registros.</td></tr>

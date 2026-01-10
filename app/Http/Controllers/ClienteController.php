@@ -84,9 +84,8 @@ class ClienteController extends Controller
                 'numero_documento' => 'nullable|string|unique:clientes,numero_documento',
                 'direccion' => 'nullable|string',
                 'fecha_nacimiento' => 'nullable|date',
-                'estado' => 'required|string', 
             ]);
-
+            $data['estado'] = 'Prospecto';
             $data['creado_por_vendedor_id'] = Auth::id();
 
             // Creamos el cliente

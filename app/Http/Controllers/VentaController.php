@@ -233,6 +233,7 @@ class VentaController extends Controller
             '{{duracion}}'        => $textoDuracion,
             '{{horario}}'         => $grupo->horario_texto ?? 'Por definir',
             '{{monto_cuota}}'     => number_format($montoCuota, 2),
+            '{{logo_path}}'       => public_path('img/logo.jpg'),
         ];
 
         foreach ($variables as $key => $value) {

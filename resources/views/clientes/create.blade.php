@@ -101,19 +101,6 @@
                     @error('direccion') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                    <label for="estado" class="form-label">Estado</label>
-                    <select class="form-select @error('estado') is-invalid @enderror" id="estado" name="estado" required>
-                        <option value="Prospecto" {{ (old('estado', $cliente->estado ?? 'Prospecto') == 'Prospecto') ? 'selected' : '' }}>Prospecto</option>
-                        <option value="En Proceso" {{ (old('estado', $cliente->estado ?? '') == 'En Proceso') ? 'selected' : '' }}>En Proceso</option>
-                        <option value="Confirmado" {{ (old('estado', $cliente->estado ?? '') == 'Confirmado') ? 'selected' : '' }}>Confirmado</option>
-                        <option value="Alumno Activo" {{ (old('estado', $cliente->estado ?? '') == 'Alumno Activo') ? 'selected' : '' }}>Alumno Activo</option>
-                        <option value="Finalizado" {{ (old('estado', $cliente->estado ?? '') == 'Finalizado') ? 'selected' : '' }}>Finalizado</option>
-                    </select>
-                    @error('estado') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
-                </div>
                 </div>
                 
                 <div class="text-end mt-4">

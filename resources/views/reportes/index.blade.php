@@ -39,6 +39,13 @@
                         <li class="nav-item">
                             <a class="nav-link text-danger" id="morosidad-tab" data-bs-toggle="tab" href="#morosidad" role="tab">🚨 Reporte de Morosidad</a>
                         </li>
+                        @if(Auth::user()->hasRole('Admin'))
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" id="asesores-tab" data-bs-toggle="tab" href="#asesores" role="tab">
+                                    🏆 Rendimiento Asesores
+                                </a>
+                            </li>
+                        @endif
                     </ul>
                 </div>
                 <div class="card-body">
@@ -98,6 +105,22 @@
                             </div>
                         </div>
 
+                        @if(Auth::user()->hasRole('Admin'))
+                            <div class="tab-pane fade" id="asesores" role="tabpanel">
+                                
+                                <div class="row align-items-center mb-4">
+                                    <div class="col-md-8">
+                                        <h5 class="fw-bold">Ranking de Ventas</h5>
+                                        <p class="text-muted">Descarga el Excel para ver el gráfico comparativo.</p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <a href="{{ route('reportes.exportar', ['tipo' => 'asesores'] + request()->all()) }}" class="btn btn-primary btn-lg shadow">
+                                            <i class="fas fa-chart-bar"></i> Descargar Excel con Gráfico
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif    
                     </div>
                 </div>
             </div>

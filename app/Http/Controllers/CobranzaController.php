@@ -19,7 +19,14 @@ class CobranzaController extends Controller
         $query = Venta::with(['cliente', 'grupo.programa', 'vendedor', 'cuotas' => function($q) {
             $q->where('estado_cuota', '!=', 'Pagada')
                 ->orderBy('fecha_vencimiento', 'asc');
-        }])->where('estado', '!=', 'Anulada');
+        }])
+        ->withCount(['cuotas as vouchers_por_validar' => function ($q) {
+            // Contamos cuotas que tengan reportes 'Pendiente'
+            $q->whereHas('reportes', function ($r) {
+                $r->where('estado', 'Pendiente');
+            });
+        }])
+        ->where('estado', '!=', 'Anulada');
 
         // --- 1. SEGURIDAD (Rol) ---
         if (!Auth::user()->hasRole('Admin')) {

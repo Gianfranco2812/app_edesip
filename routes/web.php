@@ -17,7 +17,7 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminPagoController;
-
+use App\Http\Controllers\MetodoPagoController;
 
 
 // --- 1. RUTAS PÚBLICAS ---
@@ -40,6 +40,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/perfil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/perfil/info', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    Route::get('/contratos/{id}/pdf', [ContratoController::class, 'verPdf'])->name('contratos.ver_pdf');
 
 
     
@@ -78,6 +80,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::post('/admin/pagos/{id}/aprobar', [AdminPagoController::class, 'aprobar'])->name('pagos.aprobar');
         Route::post('/admin/pagos/{id}/rechazar', [AdminPagoController::class, 'rechazar'])->name('pagos.rechazar');
+
+        Route::resource('metodos_pago', MetodoPagoController::class);
+        Route::put('/metodos_pago/{id}/toggle', [MetodoPagoController::class, 'toggleEstado'])->name('metodos_pago.toggle');
 
     });
 

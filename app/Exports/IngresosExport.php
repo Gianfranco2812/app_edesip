@@ -3,13 +3,12 @@
 namespace App\Exports;
 
 use App\Models\Cuota;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
+use Illuminate\Contracts\View\View; // Importante
+use Maatwebsite\Excel\Concerns\FromView; // Usamos FromView
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Illuminate\Support\Facades\Auth;
 
-class IngresosExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class IngresosExport implements FromView, ShouldAutoSize
 {
     protected $fechaInicio;
     protected $fechaFin;
@@ -20,45 +19,30 @@ class IngresosExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
         $this->fechaFin = $fechaFin;
     }
 
-    public function query()
+    public function view(): View
     {
-        $query = Cuota::with(['venta.cliente', 'venta.grupo'])
-                      ->where('estado_cuota', 'Pagada')
-                      ->whereDate('fecha_pago', '>=', $this->fechaInicio)
-                      ->whereDate('fecha_pago', '<=', $this->fechaFin);
+        // 1. Construimos la consulta
+        // Agregué 'venta.grupo.programa' para acceder al nombre del programa optimizado
+        $query = Cuota::with(['venta.cliente', 'venta.grupo.programa']) 
+                        ->where('estado_cuota', 'Pagada')
+                        ->whereDate('fecha_pago', '>=', $this->fechaInicio)
+                        ->whereDate('fecha_pago', '<=', $this->fechaFin);
 
+        // 2. Filtro de seguridad (Si no es Admin, solo ve ingresos de SUS ventas)
         if (!Auth::user()->hasRole('Admin')) {
             $query->whereHas('venta', function($q) {
                 $q->where('vendedor_id', Auth::id());
             });
         }
 
-        return $query;
-    }
+        // 3. Obtenemos los datos
+        $cuotas = $query->get();
 
-    public function headings(): array
-    {
-        return [
-            'Fecha Pago',
-            'Cliente',
-            'Concepto',
-            'Programa',
-            'Monto Pagado',
-            'Método Pago',
-            'N° Operación',
-        ];
-    }
-
-    public function map($cuota): array
-    {
-        return [
-            $cuota->fecha_pago ? $cuota->fecha_pago->format('d/m/Y H:i') : 'N/A',
-            $cuota->venta->cliente->nombre_completo,
-            $cuota->descripcion,
-            $cuota->venta->grupo->programa->nombre,
-            $cuota->monto_cuota,
-            $cuota->metodo_pago,
-            $cuota->transaccion_id,
-        ];
+        // 4. Retornamos la vista con los datos
+        return view('exports.ingresos', [
+            'cuotas' => $cuotas,
+            'fechaInicio' => $this->fechaInicio,
+            'fechaFin' => $this->fechaFin
+        ]);
     }
 }

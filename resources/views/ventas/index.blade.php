@@ -138,7 +138,6 @@
                     <td>
                         <div class="form-button-action">
                             
-                            
                             @if($venta->contrato && $venta->contrato->estado == 'Pendiente' && $venta->estado != 'Anulada')
                                 <a href="{{ route('ventas.previsualizar', $venta->id) }}" 
                                 class="btn btn-warning btn-sm fw-bold me-1"
@@ -147,11 +146,11 @@
                                     <i class="fas fa-file-contract text-dark"></i>
                                 </a>
                             @endif
-                            
-                            @if($venta->contrato && $venta->contrato->estado == 'Firmado' && $venta->contrato->ruta_pdf)
-                                <a href="{{ asset('storage/' . $venta->contrato->ruta_pdf) }}" 
+
+                            @if($venta->contrato && $venta->contrato->ruta_pdf)
+                                <a href="{{ route('contratos.ver_pdf', $venta->contrato->id) }}" 
                                 target="_blank"
-                                class="btn btn-success btn-sm me-1"
+                                class="btn btn-danger btn-sm me-1" 
                                 data-bs-toggle="tooltip"
                                 title="Ver Contrato Firmado (PDF)">
                                     <i class="fas fa-file-pdf"></i>

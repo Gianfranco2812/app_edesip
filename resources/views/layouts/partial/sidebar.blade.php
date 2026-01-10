@@ -47,18 +47,12 @@
                 </a>
             </li>
 
-            <li class="nav-item {{ request()->routeIs('portal.perfil') ? 'active' : '' }}">
-                <a href="{{ route('portal.perfil') }}">
-                    <i class="fas fa-user-circle"></i>
-                    <p>Mis Datos</p>
-                </a>
-            </li>
         @else
 
             <li class="nav-item {{ (request()->is('dashboard')) ? 'active' : '' }}">
             <a href="{{ route('dashboard') }}" class="nav-link">
                 <i class="fas fa-home"></i>
-                <p>Home D</p>
+                <p>Home</p>
             </a>
             </li>
 
@@ -115,6 +109,16 @@
                 </li>
                 </ul>
             </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('metodos_pago.*') ? 'active' : '' }}" 
+                href="{{ route('metodos_pago.index') }}">
+                    <i class="nav-icon fas fa-wallet"></i>
+                    
+                    <p>
+                        Cuentas y QRs
+                    </p>
+                </a>
             </li>
             @endrole
 

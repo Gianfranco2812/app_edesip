@@ -198,31 +198,73 @@
                             
                             {{-- COLUMNA IZQUIERDA: QRs y CUENTAS --}}
                             <div class="col-md-5 border-end text-center bg-light p-3 rounded">
+    
+                            @php
+                                $billeteras = $metodosPago->where('tipo', 'Billetera Digital');
+                            @endphp
+
+                            @if($billeteras->count() > 0)
                                 <h6 class="fw-bold text-muted mb-3">Escanea para pagar:</h6>
                                 
-                                <div class="d-flex justify-content-center gap-2 mb-3">
-                                    {{-- Asegúrate que estas imágenes existan en public/assets/img/ --}}
-                                    <div class="bg-white p-1 border rounded">
-                                        <img src="{{ asset('assets/img/qr-yape.png') }}" style="width: 80px;" alt="Yape">
-                                        <div class="small fw-bold text-muted mt-1">YAPE</div>
-                                    </div>
-                                    <div class="bg-white p-1 border rounded">
-                                        <img src="{{ asset('assets/img/qr-plin.png') }}" style="width: 80px;" alt="Plin">
-                                        <div class="small fw-bold text-muted mt-1">PLIN</div>
-                                    </div>
+                                {{-- A. LOS QRs (Uno al lado del otro) --}}
+                                <div class="d-flex justify-content-center gap-3 mb-3 flex-wrap">
+                                    @foreach($billeteras as $wallet)
+                                        <div class="text-center">
+                                            <div class="bg-white p-2 border rounded shadow-sm mb-1" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                                                @if($wallet->qr_imagen)
+                                                    <img src="{{ asset('storage/' . $wallet->qr_imagen) }}" 
+                                                        style="max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;" 
+                                                        alt="{{ $wallet->nombre_banco }}"
+                                                        onclick="window.open(this.src)">
+                                                @else
+                                                    <i class="fas fa-qrcode fa-3x text-warning"></i>
+                                                @endif
+                                            </div>
+                                            <span class="badge bg-warning text-dark">{{ $wallet->nombre_banco }}</span>
+                                        </div>
+                                    @endforeach
                                 </div>
-                                
-                                <h4 class="fw-bold text-success mb-1">924 828 177</h4>
-                                <small class="text-muted d-block mb-3">EDESIP S.A.C.</small>
-                                
-                                <hr>
-                                
+
+                                {{-- B. LOS NÚMEROS (Listados uno por uno) --}}
+                                <div class="mt-3">
+                                    @foreach($billeteras as $wallet)
+                                        <div class="mb-2">
+                                            <h4 class="fw-bold text-success mb-0">
+                                                <i class="fas fa-mobile-alt"></i> {{ $wallet->numero_cuenta }}
+                                            </h4>
+                                            <small class="text-muted">{{ $wallet->nombre_banco }} - {{ $wallet->titular }}</small>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                            @endif
+
+                            <hr>
+                            
+                            @php
+                                $bancos = $metodosPago->where('tipo', 'Cuenta Bancaria');
+                            @endphp
+
+                            @if($bancos->count() > 0)
                                 <div class="text-start small">
-                                    <p class="mb-1"><strong>BCP:</strong> 191-12345678-0-00</p>
-                                    <p class="mb-1"><strong>CCI:</strong> 002-1911234567800055</p>
-                                    <p class="mb-0"><strong>BBVA:</strong> 0011-0814-0200123456</p>
+                                    <h6 class="fw-bold text-secondary mb-2"><i class="fas fa-university"></i> Transferencias:</h6>
+                                    
+                                    @foreach($bancos as $banco)
+                                        <div class="mb-2 border-bottom pb-2">
+                                            <p class="mb-0 text-primary fw-bold">{{ $banco->nombre_banco }}</p>
+                                            <p class="mb-0"><strong>Nro:</strong> {{ $banco->numero_cuenta }}</p>
+                                            @if($banco->cci)
+                                                <p class="mb-0 text-muted"><strong>CCI:</strong> {{ $banco->cci }}</p>
+                                            @endif
+                                            <p class="mb-0 text-muted fst-italic" style="font-size: 0.85em;">{{ $banco->titular }}</p>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            </div>
+                            @else
+                                <p class="text-muted small">No hay cuentas bancarias registradas.</p>
+                            @endif
+
+                        </div>
 
                             {{-- COLUMNA DERECHA: FORMULARIO DE REPORTE --}}
                             <div class="col-md-7">

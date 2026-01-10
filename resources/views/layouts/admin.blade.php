@@ -9,7 +9,7 @@
         />
         <link
         rel="icon"
-        href="{{ asset('img/logo.png') }}"
+        href="{{ asset('img/logo_p.png') }}"
         type="image/x-icon"
         />
 

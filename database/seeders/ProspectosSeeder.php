@@ -17,7 +17,7 @@ class ProspectosSeeder extends Seeder
         // ==========================================
         // GRUPO 1: Asignados al Asesor ID 2
         // ==========================================
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             Cliente::create([
                 'nombre'           => $faker->firstName,
                 'apellido'         => $faker->lastName,
@@ -42,7 +42,7 @@ class ProspectosSeeder extends Seeder
         // ==========================================
         // GRUPO 2: Asignados al Asesor ID 3
         // ==========================================
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             Cliente::create([
                 'nombre'           => $faker->firstName,
                 'apellido'         => $faker->lastName,

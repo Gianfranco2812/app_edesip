@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -51,5 +52,16 @@ class User extends Authenticatable
     {
         // Esto asume que tu tabla 'clientes' tiene una columna 'user_id'
         return $this->hasOne(Cliente::class, 'user_id'); 
+    }
+
+    public function ventas(): HasMany
+    {
+        // 'vendedor_id' es la clave foránea en la tabla 'ventas'
+        return $this->hasMany(Venta::class, 'vendedor_id');
+    }
+
+    public function clientes()
+    {
+        return $this->hasMany(Cliente::class, 'creado_por_vendedor_id'); 
     }
 }

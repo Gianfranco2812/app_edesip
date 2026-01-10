@@ -9,7 +9,7 @@ use App\Models\Cliente;
 use App\Models\Venta;
 use App\Models\ReportePago;
 use Carbon\Carbon;
-
+use App\Models\MetodoPago;
 
 class PortalController extends Controller
 {
@@ -88,7 +88,8 @@ class PortalController extends Controller
             }])
             ->get();
 
-        return view('portal.pagos', compact('ventas'));
+        $metodosPago = MetodoPago::where('estado', 'Activo')->get();
+        return view('portal.pagos', compact('ventas', 'metodosPago'));
     }
 
     public function reportarPago(Request $request)
@@ -118,5 +119,4 @@ class PortalController extends Controller
         ]);
         return back()->with('success', '¡Comprobante enviado! Validaremos tu pago en breve.');
     }
-public function perfil() { return view('portal.pagos'); }
 }

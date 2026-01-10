@@ -3,19 +3,18 @@
 namespace App\Exports;
 
 use App\Models\Cuota;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
+use Illuminate\Contracts\View\View;
+use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Illuminate\Support\Facades\Auth;
 
-class MorosidadExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class MorosidadExport implements FromView, ShouldAutoSize
 {
-    public function query()
+    public function view(): View
     {
-        $query = Cuota::with(['venta.cliente', 'venta.grupo', 'venta.vendedor'])
-                        ->where('estado_cuota', '!=', 'Pagada')
-                        ->whereDate('fecha_vencimiento', '<', now());
+        $query = Cuota::with(['venta.cliente', 'venta.grupo.programa', 'venta.vendedor'])
+                        ->where('estado_cuota', '!=', 'Pagada') 
+                        ->whereDate('fecha_vencimiento', '<', now()); 
 
         if (!Auth::user()->hasRole('Admin')) {
             $query->whereHas('venta', function($q) {
@@ -23,34 +22,10 @@ class MorosidadExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
             });
         }
 
-        return $query;
-    }
+        $cuotas = $query->orderBy('fecha_vencimiento', 'asc')->get();
 
-    public function headings(): array
-    {
-        return [
-            'Fecha Vencimiento',
-            'Días de Retraso',
-            'Cliente',
-            'Teléfono',
-            'Programa',
-            'Concepto Deuda',
-            'Monto Deuda',
-            'Vendedor Responsable',
-        ];
-    }
-
-    public function map($cuota): array
-    {
-        return [
-            $cuota->fecha_vencimiento->format('d/m/Y'),
-            now()->diffInDays($cuota->fecha_vencimiento) . ' días',
-            $cuota->venta->cliente->nombre_completo,
-            $cuota->venta->cliente->telefono,
-            $cuota->venta->grupo->programa->nombre,
-            $cuota->descripcion,
-            $cuota->monto_cuota,
-            $cuota->venta->vendedor->name ?? 'N/A',
-        ];
+        return view('exports.morosidad', [
+            'cuotas' => $cuotas
+        ]);
     }
 }

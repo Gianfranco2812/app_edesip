@@ -19,6 +19,7 @@ class Contrato extends Model
         'estado',
         'fecha_confirmacion',
         'ip_confirmacion',
+        'ruta_pdf',
     ];
 
     /**

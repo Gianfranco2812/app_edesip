@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 
 class ContratoController extends Controller
@@ -71,6 +72,33 @@ class ContratoController extends Controller
                 'ruta_pdf' => $rutaPDF
             ]);
         });
+    }
+
+    public function verPdf($id)
+    {
+        // 1. Buscamos el contrato y su venta relacionada
+        $contrato = Contrato::with('venta')->findOrFail($id);
+
+        // 2. SEGURIDAD: ¿Quién puede ver esto?
+        // - El Administrador
+        // - O el Vendedor que hizo la venta
+        $esAdmin = Auth::user()->hasRole('Admin');
+        $esElVendedor = Auth::id() === $contrato->venta->vendedor_id;
+
+        if (!$esAdmin && !$esElVendedor) {
+            abort(403, 'No tienes permiso para ver este documento.');
+        }
+
+        // 3. Verificamos que el archivo físico exista
+        // Asumiendo que guardaste la ruta en la columna 'ruta_pdf' de la tabla contratos
+        // Si no tienes esa columna, avísame y usamos otra lógica.
+        if (!$contrato->ruta_pdf || !Storage::disk('public')->exists($contrato->ruta_pdf)) {
+            return back()->with('error', 'El archivo PDF no se encuentra o no ha sido generado aún.');
+        }
+
+        // 4. Mostramos el archivo en el navegador
+        // response()->file() abre el PDF en el navegador en lugar de descargarlo forzosamente
+        return response()->file(storage_path('app/public/' . $contrato->ruta_pdf));
     }
 
     // =========================================================================
@@ -150,6 +178,10 @@ class ContratoController extends Controller
 
         // Guardamos en el disco público (storage/app/public/matriculas/...)
         Storage::disk('public')->put($rutaStorage, $pdf->output());
+
+        $contrato->update([
+            'ruta_pdf' => $rutaStorage
+        ]);
 
         return $rutaStorage;
     }
