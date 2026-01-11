@@ -46,8 +46,26 @@ class VentaController extends Controller
         }
 
         if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+        $estado = $request->estado;
+
+        if ($estado == 'Firmado') {
+            $query->whereHas('contrato', function ($q) {
+                $q->where('estado', 'Firmado')
+                    ->orWhereNotNull('ruta_pdf');
+            })->where('estado', '!=', 'Anulada');
+
+        } elseif ($estado == 'Pendiente') {
+            $query->where(function($subQuery) {
+                $subQuery->whereHas('contrato', function ($q) {
+                    $q->where('estado', 'Pendiente');
+                })
+                ->orWhereDoesntHave('contrato'); 
+            })->where('estado', '!=', 'Anulada');
+
+        } elseif ($estado == 'Anulada') {
+            $query->where('estado', 'Anulada');
         }
+    }
 
         if (Auth::user()->hasRole('Admin') && $request->filled('vendedor_id')) {
             $query->where('vendedor_id', $request->vendedor_id);

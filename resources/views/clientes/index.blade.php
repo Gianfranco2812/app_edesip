@@ -17,21 +17,38 @@
                     </a>
                 </div>
 
-                <form action="{{ route('clientes.index') }}" method="GET" class="p-3 bg-light rounded border">
+                <form action="{{ route('clientes.index') }}" method="GET" class="p-3 bg-light rounded border" id="filterForm">
                     <div class="row g-3">
                         
+                        {{-- 1. BUSCADOR (Funciona al presionar ENTER) --}}
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Buscar</label>
+                            <label class="form-label fw-bold small">Buscar</label>
                             <input type="text" name="search" class="form-control" 
-                                placeholder="Nombre, DNI o Teléfono..." 
+                                placeholder="Escribe y presiona Enter..." 
                                 value="{{ request('search') }}">
                         </div>
 
+                        {{-- 2. FILTRO ESTADO (Automático) --}}
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Estado:</label>
+                            {{-- Agregamos onchange="this.form.submit()" --}}
+                            <select name="estado" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                @foreach(['Prospecto', 'En Proceso', 'Confirmado', 'Alumno Activo', 'Finalizado'] as $estado)
+                                    <option value="{{ $estado }}" {{ request('estado') == $estado ? 'selected' : '' }}>
+                                        {{ $estado }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- 3. FILTRO ASESOR (Solo Admin - Automático) --}}
                         @role('Admin')
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Filtrar por Asesor</label>
-                            <select name="vendedor_id" class="form-select">
-                                <option value="">Todos los asesores</option>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Asesor:</label>
+                            {{-- Agregamos onchange="this.form.submit()" --}}
+                            <select name="vendedor_id" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
                                 @foreach($vendedores as $vendedor)
                                     <option value="{{ $vendedor->id }}" {{ request('vendedor_id') == $vendedor->id ? 'selected' : '' }}>
                                         {{ $vendedor->name }}
@@ -41,26 +58,33 @@
                         </div>
                         @endrole
 
+                        {{-- 4. FECHAS (Automático) --}}
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Registrado Desde</label>
-                            <input type="date" name="fecha_inicio" class="form-control" value="{{ request('fecha_inicio') }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Hasta</label>
-                            <input type="date" name="fecha_fin" class="form-control" value="{{ request('fecha_fin') }}">
+                            <label class="form-label fw-bold small">Desde</label>
+                            {{-- Agregamos onchange="this.form.submit()" --}}
+                            <input type="date" name="fecha_inicio" class="form-control" 
+                                value="{{ request('fecha_inicio') }}" onchange="this.form.submit()">
                         </div>
                         
-                        <div class="col-md-2 d-flex align-items-end">
-                            <div class="d-grid gap-2 d-md-block">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-filter"></i>
-                                </button>
-                                <a href="{{ route('clientes.index') }}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Limpiar Filtros">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Hasta</label>
+                            {{-- Agregamos onchange="this.form.submit()" --}}
+                            <input type="date" name="fecha_fin" class="form-control" 
+                                value="{{ request('fecha_fin') }}" onchange="this.form.submit()">
+                        </div>
+                        
+                        {{-- 5. BOTÓN LIMPIAR (Solo mostramos si hay filtros activos) --}}
+                        <div class="col-md-1 d-flex align-items-end">
+                            @if(request()->anyFilled(['search', 'estado', 'vendedor_id', 'fecha_inicio', 'fecha_fin']))
+                                <a href="{{ route('clientes.index') }}" class="btn btn-outline-danger w-100" data-bs-toggle="tooltip" title="Quitar Filtros">
                                     <i class="fas fa-times"></i>
                                 </a>
-                            </div>
+                            @endif
                         </div>
                     </div>
+                    
+                    {{-- TRUCO: Botón submit invisible para que el buscador funcione con ENTER --}}
+                    <button type="submit" style="display: none;"></button>
                 </form>
             </div>
 

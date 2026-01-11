@@ -41,7 +41,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Fecha de Pago</label>
-                                <input type="date" class="form-control" name="fecha_pago" value="{{ date('Y-m-d') }}" required>
+                                <input type="date" class="form-control" name="fecha_pago" value="{{ date('Y-m-d') }}" required readonly >
                             </div>
                         </div>
                         <div class="col-md-6">

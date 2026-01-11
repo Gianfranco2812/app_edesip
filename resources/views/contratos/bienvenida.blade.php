@@ -22,7 +22,7 @@
                     <p class="text-muted mb-4">Hemos generado tu acceso al Portal del Estudiante.</p>
 
                     <div class="alert alert-primary text-start">
-                        <h5 class="fw-bold border-bottom pb-2 mb-3">Tus Credenciales de Acceso:</h5>
+                        <h5 class="fw-bold border-bottom pb-2 mb-3">Tus Credenciales de Acceso al Portal de Pagos y Aula Virtual:</h5>
                         
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Usuario:</span>

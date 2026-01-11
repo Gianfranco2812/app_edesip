@@ -170,7 +170,7 @@
                                 <tr>
                                     <td class="fw-bold">{{ $loop->iteration }}</td>
                                     <td>{{ \Carbon\Carbon::parse($cuota->fecha_vencimiento)->format('d/m/Y') }}</td>
-                                    <td>{{ $cuota->concepto }}</td>
+                                    <td>{{ $cuota->descripcion }}</td>
                                     <td>S/ {{ number_format($cuota->monto_cuota, 2) }}</td>
                                     <td><span class="badge bg-{{ $badgeColor }}">{{ $textoEstado }}</span></td>
                                 </tr>
@@ -276,7 +276,8 @@
                                     {{-- SELECT DE CUOTAS PENDIENTES --}}
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold text-dark">¿Qué cuota estás pagando?</label>
-                                        <select name="cuota_id" class="form-select border-success" required>
+                                        {{-- 1. Agregamos el ID 'select_cuota' --}}
+                                        <select name="cuota_id" id="select_cuota" class="form-select border-success" required>
                                             <option value="" selected disabled>Selecciona una opción...</option>
                                             @foreach($cuotas as $c)
                                                 @php 
@@ -284,8 +285,9 @@
                                                     // Solo mostramos las que NO están pagadas
                                                     if(!in_array($estC, ['PAGADO', 'PAGADA', 'COMPLETADO'])) {
                                                 @endphp
-                                                    <option value="{{ $c->id }}">
-                                                        {{ $c->concepto }} (Vence: {{ \Carbon\Carbon::parse($c->fecha_vencimiento)->format('d/m') }}) - S/ {{ number_format($c->monto_cuota, 2) }}
+                                                    {{-- 2. Agregamos data-monto con el precio --}}
+                                                    <option value="{{ $c->id }}" data-monto="{{ $c->monto_cuota }}">
+                                                        {{ $c->descripcion }} (Vence: {{ \Carbon\Carbon::parse($c->fecha_vencimiento)->format('d/m') }}) - S/ {{ number_format($c->monto_cuota, 2) }}
                                                     </option>
                                                 @php } @endphp
                                             @endforeach
@@ -297,7 +299,7 @@
                                             <label class="form-label small fw-bold">Monto (S/)</label>
                                             <div class="input-group">
                                                 <span class="input-group-text bg-white">S/</span>
-                                                <input type="number" step="0.10" name="monto" class="form-control" placeholder="0.00" required>
+                                                <input type="number" step="0.01" name="monto_pagado" id="txt_monto" class="form-control" placeholder="00" required>
                                             </div>
                                         </div>
                                         <div class="col-6 mb-3">
@@ -352,5 +354,27 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 @endif
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectCuota = document.getElementById('select_cuota');
+        const txtMonto = document.getElementById('txt_monto');
 
+        if(selectCuota && txtMonto) {
+            selectCuota.addEventListener('change', function() {
+                // Obtener la opción seleccionada
+                const selectedOption = this.options[this.selectedIndex];
+                
+                // Leer el atributo data-monto
+                const monto = selectedOption.getAttribute('data-monto');
+
+                // Llenar el input
+                if(monto) {
+                    txtMonto.value = parseFloat(monto).toFixed(2);
+                } else {
+                    txtMonto.value = '';
+                }
+            });
+        }
+    });
+</script>
 @endsection

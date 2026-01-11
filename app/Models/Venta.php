@@ -72,4 +72,20 @@ class Venta extends Model
     {
         return $this->hasMany(Cuota::class, 'venta_id');
     }
+    public function getEstadoActualAttribute()
+    {
+        // 1. Si la venta fue anulada manualmente, ese es su estado definitivo.
+        if ($this->estado === 'Anulada') {
+            return 'Anulada';
+        }
+
+        // 2. Si tiene contrato y ya tiene PDF (firmado) o estado 'Firmado'
+        // Ajusta la condición según cómo guardes el contrato firmado
+        if ($this->contrato && ($this->contrato->estado === 'Firmado' || $this->contrato->ruta_pdf)) {
+            return 'Cerrada';
+        }
+
+        // 3. Si no está anulada ni firmada, sigue en proceso
+        return 'En Proceso';
+    }
 }

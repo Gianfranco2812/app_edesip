@@ -52,4 +52,9 @@ class Cuota extends Model
         // Retorna el primer reporte que esté en estado 'Pendiente'
         return $this->reportes->where('estado', 'Pendiente')->first();
     }
+    public function pagos()
+    {
+        // 'cuota_id' es la llave foránea en tu tabla 'reporte_pagos'
+        return $this->hasMany(ReportePago::class, 'cuota_id');
+    }
 }

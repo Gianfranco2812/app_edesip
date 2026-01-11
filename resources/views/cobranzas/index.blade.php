@@ -11,32 +11,34 @@
         <div class="card">
             
             <div class="card-header">
-                <h4 class="card-title mb-3">Filtros de Morosidad</h4>
-                
                 <form action="{{ route('cobranzas.index') }}" method="GET" class="p-3 bg-light rounded border">
-                    <div class="row g-3">
+                    <div class="row g-2 align-items-end">
                         
+                        {{-- 1. BUSCADOR (Enter para enviar) --}}
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Buscar</label>
-                            <input type="text" name="search" class="form-control" 
-                                placeholder="Alumno, DNI..." value="{{ request('search') }}">
+                            <label class="form-label fw-bold small">Buscar</label>
+                            <input type="text" name="search" class="form-control form-control-sm" 
+                                placeholder="Alumno o DNI..." 
+                                value="{{ request('search') }}">
                         </div>
 
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Grupo</label>
-                            <select name="grupo_id" class="form-select">
-                                <option value="">Todos los grupos</option>
+                        {{-- 2. GRUPO (Automático) --}}
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Grupo</label>
+                            <select name="grupo_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">Todos</option>
                                 @foreach($grupos as $grupo)
                                     <option value="{{ $grupo->id }}" {{ request('grupo_id') == $grupo->id ? 'selected' : '' }}>
-                                        {{ $grupo->codigo_grupo }} - {{ Str::limit($grupo->programa->nombre, 20) }}
+                                        {{ $grupo->codigo_grupo }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
 
+                        {{-- 3. ESTADO DEUDA (Automático) --}}
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Estado Deuda</label>
-                            <select name="estado_deuda" class="form-select">
+                            <label class="form-label fw-bold small">Estado Deuda</label>
+                            <select name="estado_deuda" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 <option value="vencido" {{ request('estado_deuda') == 'vencido' ? 'selected' : '' }} class="text-danger fw-bold">
                                     🔴 Retrasados
@@ -50,10 +52,22 @@
                             </select>
                         </div>
 
+                        {{-- 4. NUEVO: FILTRO VOUCHERS (Automático) --}}
+                        <div class="col-md-2">
+                            <label label class="form-label fw-bold small">Validación Pagos</label>
+                            <select name="filtro_voucher" class="form-select form-select-sm " onchange="this.form.submit()">
+                                <option value="">Ver Todo</option>
+                                <option value="pendientes" {{ request('filtro_voucher') == 'pendientes' ? 'selected' : '' }} class="fw-bold">
+                                    Vouchers Pendientes
+                                </option>
+                            </select>
+                        </div>
+
+                        {{-- 5. ASESOR (Solo Admin - Automático) --}}
                         @role('Admin')
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Asesor</label>
-                            <select name="vendedor_id" class="form-select">
+                            <label class="form-label fw-bold small">Asesor</label>
+                            <select name="vendedor_id" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 @foreach($vendedores as $vendedor)
                                     <option value="{{ $vendedor->id }}" {{ request('vendedor_id') == $vendedor->id ? 'selected' : '' }}>
@@ -64,17 +78,19 @@
                         </div>
                         @endrole
 
-                        <div class="col-md-{{ Auth::user()->hasRole('Admin') ? '2' : '4' }} d-flex align-items-end">
-                            <div class="d-grid gap-2 d-md-block w-100 text-end">
-                                <a href="{{ route('cobranzas.index') }}" class="btn btn-outline-danger me-1" title="Limpiar">
+                        {{-- 6. BOTÓN LIMPIAR (Condicional) --}}
+                        <div class="col-md-1">
+                            @if(request()->anyFilled(['search', 'grupo_id', 'estado_deuda', 'filtro_voucher', 'vendedor_id']))
+                                <a href="{{ route('cobranzas.index') }}" class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="tooltip" title="Limpiar Filtros">
                                     <i class="fas fa-times"></i>
                                 </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search"></i> Filtrar
-                                </button>
-                            </div>
+                            @endif
                         </div>
+
                     </div>
+                    
+                    {{-- Botón invisible para permitir Enter en el buscador --}}
+                    <button type="submit" style="display: none;"></button>
                 </form>
             </div>
 

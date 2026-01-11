@@ -19,18 +19,20 @@
                 </div>
 
                 <form action="{{ route('ventas.index') }}" method="GET" class="p-3 bg-light rounded border">
-                    <div class="row g-3">
+                    <div class="row g-2 align-items-end">
                         
+                        {{-- 1. BUSCADOR (Enter para enviar) --}}
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Buscar</label>
-                            <input type="text" name="search" class="form-control" 
+                            <label class="form-label fw-bold small">Buscar</label>
+                            <input type="text" name="search" class="form-control form-control-sm" 
                                 placeholder="Alumno, DNI o Grupo..." 
                                 value="{{ request('search') }}">
                         </div>
 
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Programa</label>
-                            <select name="programa_id" class="form-select">
+                        {{-- 2. PROGRAMA (Automático) --}}
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small">Programa</label>
+                            <select name="programa_id" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 @foreach($programas as $programa)
                                     <option value="{{ $programa->id }}" {{ request('programa_id') == $programa->id ? 'selected' : '' }}>
@@ -40,20 +42,34 @@
                             </select>
                         </div>
 
+                        {{-- 3. ESTADO (Automático) --}}
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Estado</label>
-                            <select name="estado" class="form-select">
+                            <label class="form-label fw-bold small">Estado Contrato</label>
+                            <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Todos</option>
-                                <option value="En Proceso" {{ request('estado') == 'En Proceso' ? 'selected' : '' }}>En Proceso</option>
-                                <option value="Cerrada" {{ request('estado') == 'Cerrada' ? 'selected' : '' }}>Cerrada (Ok)</option>
-                                <option value="Anulada" {{ request('estado') == 'Anulada' ? 'selected' : '' }}>Anulada</option>
+                                
+                                {{-- Opción 1: Contrato Pendiente (o venta sin contrato aún) --}}
+                                <option value="Pendiente" {{ request('estado') == 'Pendiente' ? 'selected' : '' }}>
+                                    Pendiente
+                                </option>
+                                
+                                {{-- Opción 2: Contrato Firmado (Venta Cerrada) --}}
+                                <option value="Firmado" {{ request('estado') == 'Firmado' ? 'selected' : '' }}>
+                                    Firmado
+                                </option>
+                                
+                                {{-- Opción 3: Anulada (Sigue siendo un estado de la venta) --}}
+                                <option value="Anulada" {{ request('estado') == 'Anulada' ? 'selected' : '' }}>
+                                    Anulada
+                                </option>
                             </select>
                         </div>
 
+                        {{-- 4. VENDEDOR (Solo Admin - Automático) --}}
                         @role('Admin')
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Vendedor</label>
-                            <select name="vendedor_id" class="form-select">
+                            <label class="form-label fw-bold small">Vendedor</label>
+                            <select name="vendedor_id" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 @foreach($vendedores as $vendedor)
                                     <option value="{{ $vendedor->id }}" {{ request('vendedor_id') == $vendedor->id ? 'selected' : '' }}>
@@ -64,20 +80,25 @@
                         </div>
                         @endrole
                         
+                        {{-- 5. FECHA (Automático) --}}
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Fecha Venta</label>
-                            <input type="date" name="fecha_inicio" class="form-control" value="{{ request('fecha_inicio') }}">
+                            <label class="form-label fw-bold small">Fecha Venta</label>
+                            <input type="date" name="fecha_inicio" class="form-control form-control-sm" 
+                                value="{{ request('fecha_inicio') }}" onchange="this.form.submit()">
                         </div>
 
-                        <div class="col-md-12 text-end mt-3">
-                            <a href="{{ route('ventas.index') }}" class="btn btn-outline-danger btn-sm me-2">
-                                <i class="fas fa-times"></i> Limpiar
-                            </a>
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="fas fa-search"></i> Filtrar
-                            </button>
+                        {{-- 6. BOTÓN LIMPIAR (Solo si hay filtros activos) --}}
+                        <div class="col-md-1">
+                            @if(request()->anyFilled(['search', 'programa_id', 'estado', 'vendedor_id', 'fecha_inicio']))
+                                <a href="{{ route('ventas.index') }}" class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="tooltip" title="Quitar Filtros">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            @endif
                         </div>
                     </div>
+
+                    {{-- Botón invisible para permitir "Enter" en el buscador --}}
+                    <button type="submit" style="display: none;"></button>
                 </form>
             </div>
 
@@ -88,9 +109,8 @@
                     <tr>
                     <th>Fecha</th>
                     <th>Cliente</th>
-                    <th>Programa / Grupo</th>
+                    <th>Programa - Grupo</th>
                     <th>Total</th>
-                    <th>Estado</th>
                     <th>Contrato</th>
                     @role('Admin')
                         <th>Asesor</th>
@@ -117,17 +137,8 @@
                     </td>
                     <td class="fw-bold">S/ {{ number_format($venta->costo_total_venta, 2) }}</td>
                     <td>
-                        @if($venta->estado == 'Cerrada')
-                        <span class="badge bg-success">Cerrada</span>
-                        @elseif($venta->estado == 'En Proceso')
-                        <span class="badge bg-warning text-dark">En Proceso</span>
-                        @else
-                        <span class="badge bg-danger">Anulada</span>
-                        @endif
-                    </td>
-                    <td>
-                        @if($venta->contrato && $venta->contrato->estado == 'Confirmado')
-                        <i class="fas fa-check-circle text-success" title="Firmado"></i> Confirmado
+                        @if($venta->contrato && $venta->contrato->estado == 'Firmado')
+                        <i class="fas fa-check-circle text-success" title="Firmado"></i> Firmado
                         @else
                         <i class="fas fa-clock text-warning" title="Pendiente"></i> Pendiente
                         @endif

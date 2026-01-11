@@ -13,16 +13,17 @@ use App\Models\Programa;
 
 class CobranzaController extends Controller
 {
-    public function index(Request $request)
+public function index(Request $request)
     {
         // Consulta base: Ventas activas
+        // NOTA: Asegúrate de que en el Modelo Cuota la función se llame 'pagos'
         $query = Venta::with(['cliente', 'grupo.programa', 'vendedor', 'cuotas' => function($q) {
             $q->where('estado_cuota', '!=', 'Pagada')
-                ->orderBy('fecha_vencimiento', 'asc');
+              ->orderBy('fecha_vencimiento', 'asc');
         }])
+        // CORRECCIÓN: Usamos 'pagos' para el contador del badge rojo/amarillo
         ->withCount(['cuotas as vouchers_por_validar' => function ($q) {
-            // Contamos cuotas que tengan reportes 'Pendiente'
-            $q->whereHas('reportes', function ($r) {
+            $q->whereHas('pagos', function ($r) { 
                 $r->where('estado', 'Pendiente');
             });
         }])
@@ -58,49 +59,55 @@ class CobranzaController extends Controller
         }
 
         // --- 5. FILTRO POR ESTADO DE DEUDA (SEMÁFORO) ---
-        // Aquí ocurre la magia para filtrar R/N/V en la base de datos
         if ($request->filled('estado_deuda')) {
             $hoy = now()->startOfDay();
-            $limitePronto = now()->addDays(3)->endOfDay(); // Definimos "Pronto" como 3 días
+            $limitePronto = now()->addDays(3)->endOfDay(); 
 
             switch ($request->estado_deuda) {
                 case 'vencido': // ROJO
-                    // Ventas que tienen AL MENOS UNA cuota vencida pendiente
                     $query->whereHas('cuotas', function($q) use ($hoy) {
                         $q->where('estado_cuota', '!=', 'Pagada')
-                            ->whereDate('fecha_vencimiento', '<', $hoy);
+                          ->whereDate('fecha_vencimiento', '<', $hoy);
                     });
                     break;
 
                 case 'por_vencer': // NARANJA
-                    // Ventas con cuotas próximas... Y SIN cuotas vencidas (si no, sería rojo)
                     $query->whereHas('cuotas', function($q) use ($hoy, $limitePronto) {
                         $q->where('estado_cuota', '!=', 'Pagada')
-                            ->whereBetween('fecha_vencimiento', [$hoy, $limitePronto]);
+                          ->whereBetween('fecha_vencimiento', [$hoy, $limitePronto]);
                     })->whereDoesntHave('cuotas', function($q) use ($hoy) {
                         $q->where('estado_cuota', '!=', 'Pagada')
-                            ->whereDate('fecha_vencimiento', '<', $hoy);
+                          ->whereDate('fecha_vencimiento', '<', $hoy);
                     });
                     break;
 
                 case 'al_dia': // VERDE
-                    // Ventas que NO tienen nada vencido ni próximo a vencer
                     $query->whereDoesntHave('cuotas', function($q) use ($limitePronto) {
                         $q->where('estado_cuota', '!=', 'Pagada')
-                            ->whereDate('fecha_vencimiento', '<=', $limitePronto);
+                          ->whereDate('fecha_vencimiento', '<=', $limitePronto);
                     });
                     break;
             }
+        }
+
+        // =========================================================
+        // 6. NUEVO: FILTRO POR VOUCHERS PENDIENTES
+        // =========================================================
+        if ($request->filled('filtro_voucher') && $request->filtro_voucher == 'pendientes') {
+            // Buscamos VENTAS que tengan CUOTAS que tengan PAGOS pendientes
+            $query->whereHas('cuotas', function($qCuota) {
+                $qCuota->whereHas('pagos', function($qPago) {
+                    $qPago->where('estado', 'Pendiente');
+                });
+            });
         }
 
         // Ejecutar
         $ventas = $query->latest()->paginate(20);
 
         // --- DATOS PARA DROPDOWNS ---
-        // Grupos activos o próximos
         $grupos = Grupo::with('programa')->where('estado', '!=', 'Cancelado')->get();
         
-        // Vendedores
         $vendedores = [];
         if (Auth::user()->hasRole('Admin')) {
             $vendedores = User::role(['Asesor', 'Admin'])->get();
