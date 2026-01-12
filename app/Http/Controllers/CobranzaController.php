@@ -15,7 +15,6 @@ class CobranzaController extends Controller
 {
 public function index(Request $request)
     {
-        // Consulta base: Ventas activas
         // NOTA: Asegúrate de que en el Modelo Cuota la función se llame 'pagos'
         $query = Venta::with(['cliente', 'grupo.programa', 'vendedor', 'cuotas' => function($q) {
             $q->where('estado_cuota', '!=', 'Pagada')
@@ -121,7 +120,7 @@ public function index(Request $request)
     {
         $venta = Venta::with(['cliente', 'grupo', 'cuotas'])->findOrFail($id);
 
-        // Seguridad: Asesor solo ve sus ventas
+
         if (!Auth::user()->hasRole('Admin') && $venta->vendedor_id != Auth::id()) {
             abort(403);
         }
@@ -134,7 +133,6 @@ public function index(Request $request)
      */
     public function edit(Cuota $cuota)
     {
-        // Seguridad: Verificar si el asesor puede ver esta cuota
         if (!Auth::user()->hasRole('Admin') && $cuota->venta->vendedor_id != Auth::id()) {
             abort(403, 'No tienes permiso para gestionar esta cobranza.');
         }
@@ -149,19 +147,18 @@ public function index(Request $request)
     {
         $request->validate([
             'fecha_pago' => 'required|date',
-            'monto_pagado' => 'required|numeric|min:' . $cuota->monto_cuota, // Debe pagar al menos el monto exacto
+            'monto_pagado' => 'required|numeric|min:' . $cuota->monto_cuota, 
             'metodo_pago' => 'required|string',
             'transaccion_id' => 'nullable|string',
         ]);
 
-        // Actualizamos la cuota
+   
         $cuota->update([
             'estado_cuota' => 'Pagada',
             'fecha_pago' => $request->fecha_pago,
             'metodo_pago' => $request->metodo_pago,
             'transaccion_id' => $request->transaccion_id,
-            // Nota: Podrías guardar el 'monto_pagado' si permites pagos parciales, 
-            // pero por ahora asumimos pago completo.
+
         ]);
 
         return redirect()->route('cobranzas.show', $cuota->venta_id)

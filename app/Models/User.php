@@ -16,7 +16,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
-     * The attributes that are mass assignable.
+    
      *
      * @var array<int, string>
      */
@@ -29,7 +29,6 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
      */
@@ -39,7 +38,6 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
      *
      * @var array<string, string>
      */
@@ -50,13 +48,11 @@ class User extends Authenticatable
 
     public function cliente()
     {
-        // Esto asume que tu tabla 'clientes' tiene una columna 'user_id'
         return $this->hasOne(Cliente::class, 'user_id'); 
     }
 
     public function ventas(): HasMany
     {
-        // 'vendedor_id' es la clave foránea en la tabla 'ventas'
         return $this->hasMany(Venta::class, 'vendedor_id');
     }
 

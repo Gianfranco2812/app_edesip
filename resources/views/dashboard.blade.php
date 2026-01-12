@@ -293,9 +293,6 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         
-        // ----------------------------------------------------
-        // GRÁFICO 1: VENTAS (AZUL) - Código que ya tenías
-        // ----------------------------------------------------
         var ctx1 = document.getElementById("myBarChart");
         if (ctx1) {
             var nombres = {!! json_encode($labelsGrafico ?? []) !!};

@@ -29,17 +29,17 @@ class ProfileController extends Controller
             'photo' => ['nullable', 'image', 'max:4048'], // Max 2MB
         ]);
 
-        // Actualizar datos básicos
+
         $user->name = $request->name;
         $user->email = $request->email;
 
-        // Manejo de la Foto
+
         if ($request->hasFile('photo')) {
-            // 1. Borrar foto anterior si existe
+
             if ($user->profile_photo_path) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
-            // 2. Subir nueva foto
+ 
             $path = $request->file('photo')->store('profile-photos', 'public');
             $user->profile_photo_path = $path;
         }
@@ -61,7 +61,6 @@ class ProfileController extends Controller
 
         $user = Auth::user();
         
-        // Actualizar contraseña
         $user->password = Hash::make($request->password);
         $user->save();
 

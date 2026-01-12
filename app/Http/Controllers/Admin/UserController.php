@@ -15,22 +15,21 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Iniciamos la consulta base cargando los roles (para evitar N+1)
+
         $query = User::with('roles');
 
-        // 2. BUSCADOR INTELIGENTE
+
         if ($request->filled('search')) {
             $search = $request->search;
             
-            // Agrupamos los 'OR' dentro de un paréntesis para no romper otras condiciones futuras
+            
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")      // Busca por Nombre
-                  ->orWhere('email', 'like', "%{$search}%")   // Busca por Email
-                  ->orWhere('username', 'like', "%{$search}%"); // Busca por DNI/Usuario
+                $q->where('name', 'like', "%{$search}%")      
+                    ->orWhere('email', 'like', "%{$search}%")   
+                    ->orWhere('username', 'like', "%{$search}%"); 
             });
         }
 
-        // 3. Ejecutar y paginar (ordenado por los más nuevos)
         $users = $query->latest()->paginate(10);
 
         return view('admin.usuarios.index', compact('users'));
@@ -46,7 +45,6 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            // NUEVO: Validar username único
             'username' => 'required|string|max:255|unique:users', 
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
@@ -55,7 +53,7 @@ class UserController extends Controller
 
         $user = User::create([
             'name' => $request->name,
-            'username' => $request->username, // <-- AGREGAR ESTO
+            'username' => $request->username, 
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
@@ -83,7 +81,6 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            // NUEVO: Validar unique ignorando al usuario actual
             'username' => 'required|string|max:255|unique:users,username,' . $usuario->id,
             'email' => 'required|string|email|max:255|unique:users,email,' . $usuario->id,
             'password' => 'nullable|string|min:8|confirmed',
@@ -92,7 +89,7 @@ class UserController extends Controller
 
         $data = [
             'name' => $request->name,
-            'username' => $request->username, // <-- AGREGAR ESTO
+            'username' => $request->username, 
             'email' => $request->email,
         ];
 

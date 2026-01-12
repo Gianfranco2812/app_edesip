@@ -13,11 +13,9 @@ class AlertaDeudaNotification extends Notification
 use Queueable;
 
     public $cuota;
-    public $tipo; // 'warning' (por vencer) o 'danger' (vencido)
+    public $tipo; 
 
-    /**
-     * Recibimos la cuota y el tipo de alerta.
-     */
+   
     public function __construct(Cuota $cuota, $tipo)
     {
         $this->cuota = $cuota;

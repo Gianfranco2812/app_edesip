@@ -20,7 +20,7 @@ use App\Http\Controllers\AdminPagoController;
 use App\Http\Controllers\MetodoPagoController;
 
 
-// --- 1. RUTAS PÚBLICAS ---
+
 
 
 Route::get('/', function () {
@@ -33,7 +33,7 @@ Route::get('/ventas/{id}/previsualizar-contrato', [VentaController::class, 'prev
 Auth::routes();
 
 
-// --- 2. RUTAS PROTEGIDAS (Requieren Login) ---
+
 
 Route::middleware(['auth'])->group(function () {
 
@@ -47,7 +47,6 @@ Route::middleware(['auth'])->group(function () {
     
 
 
-    // --- 3. RUTAS DE ADMINISTRACIÓN (SOLO ROL 'Admin') ---
 
     Route::prefix('admin')->middleware(['role:Admin'])->group(function () {
 
@@ -61,7 +60,6 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('grupos', GrupoController::class);
     });
 
-        // --- 4. RUTAS DE ADMINISTRACIÓN Y ASESOR ---
 
     Route::middleware(['role:Admin|Asesor'])->group(function () {
         

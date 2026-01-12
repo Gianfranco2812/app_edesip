@@ -114,7 +114,7 @@ class VentaController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validaciones
+        
         $data = $request->validate([
             'cliente_id' => 'required|exists:clientes,id',
             'grupo_id'   => 'required|exists:grupos,id',
@@ -123,7 +123,7 @@ class VentaController extends Controller
         $cliente = Cliente::findOrFail($data['cliente_id']);
         $grupo = Grupo::with('programa.plantillaContrato')->findOrFail($data['grupo_id']);
 
-        // 2. Anti-duplicados
+        
         $existe = Venta::where('cliente_id', $cliente->id)
                         ->where('grupo_id', $grupo->id)
                         ->where('estado', '!=', 'Anulada')
@@ -136,7 +136,7 @@ class VentaController extends Controller
         try {
             DB::beginTransaction();
 
-            // A. Crear la Venta (Cabecera)
+        
             $venta = Venta::create([
                 'cliente_id'  => $cliente->id,
                 'grupo_id'    => $grupo->id,
@@ -149,13 +149,11 @@ class VentaController extends Controller
                 'texto_promocional_venta' => $grupo->texto_promocional,
             ]);
 
-            // B. Delegar creación de Cuotas
+            
             $this->generarCuotas($venta, $grupo);
 
-            // C. Delegar creación del Contrato
             $this->generarContrato($venta, $cliente, $grupo);
 
-            // D. Actualizar Cliente
             if ($cliente->estado === 'Prospecto') {
                 $cliente->update(['estado' => 'En Proceso']);
             }
@@ -174,10 +172,10 @@ class VentaController extends Controller
 
     private function generarCuotas(Venta $venta, Grupo $grupo)
     {
-        // Definir Fecha Base (Inicio de Clases o Hoy)
+        
         $fechaBase = $grupo->fecha_inicio ? Carbon::parse($grupo->fecha_inicio) : now();
 
-        // 1. Crear Matrícula (Vence el mismo día que inicia el curso)
+        
         if ($venta->costo_matricula_venta > 0) {
             Cuota::create([
                 'venta_id'          => $venta->id,
@@ -188,7 +186,7 @@ class VentaController extends Controller
             ]);
         }
 
-        // 2. Crear Mensualidades
+        
         if ($venta->nro_cuotas_venta > 0 && $venta->costo_total_venta > 0) {
             $montoMensual = $venta->costo_total_venta / $venta->nro_cuotas_venta;
 
@@ -197,7 +195,6 @@ class VentaController extends Controller
                     'venta_id'          => $venta->id,
                     'descripcion'       => "Cuota $i de {$venta->nro_cuotas_venta}",
                     'monto_cuota'       => $montoMensual,
-                    // Cuota 1 = Fecha Base, Cuota 2 = Fecha Base + 1 mes...
                     'fecha_vencimiento' => $fechaBase->copy()->addMonths($i - 1),
                     'estado_cuota'      => 'Pendiente',
                 ]);
@@ -207,15 +204,15 @@ class VentaController extends Controller
 
     private function generarContrato(Venta $venta, Cliente $cliente, Grupo $grupo)
     {
-        // Obtener plantilla base
+
         $plantilla = $grupo->programa->plantillaContrato;
         $contenidoBase = $plantilla ? $plantilla->contenido : '<p>Error: No hay plantilla asignada.</p>';
         $plantillaId = $plantilla ? $plantilla->id : null;
 
-        // Reemplazar variables (Usa el helper existente)
+
         $htmlFinal = $this->reemplazarPlaceholders($contenidoBase, $cliente, $grupo, $venta);
 
-        // Crear registro
+
         Contrato::create([
             'venta_id'              => $venta->id,
             'plantilla_contrato_id' => $plantillaId,
@@ -227,7 +224,7 @@ class VentaController extends Controller
 
     private function reemplazarPlaceholders($html, $cliente, $grupo, $venta)
     {
-        // 1. Duración en meses
+
         if ($grupo->fecha_inicio && $grupo->fecha_termino) {
             $inicio = Carbon::parse($grupo->fecha_inicio);
             $fin = Carbon::parse($grupo->fecha_termino);
@@ -237,12 +234,12 @@ class VentaController extends Controller
             $textoDuracion = '6 MESES';
         }
 
-        // 2. Cálculo cuota
+
         $costoTotal = $venta->costo_total_venta ?? 0;
         $nroCuotas = $venta->nro_cuotas_venta > 0 ? $venta->nro_cuotas_venta : 1;
         $montoCuota = $costoTotal / $nroCuotas;
 
-        // 3. Reemplazo
+
         $variables = [
             '{{nombre_programa}}' => strtoupper($grupo->programa->nombre),
             '{{nombre_alumno}}'   => strtoupper($cliente->nombre . ' ' . $cliente->apellido),
@@ -285,7 +282,6 @@ class VentaController extends Controller
 
             $venta->update(['estado' => 'Anulada']);
 
-            // Eliminar cuotas pendientes (mantener pagadas si las hubiera)
             $venta->cuotas()->where('estado_cuota', '!=', 'Pagada')->delete();
             
             $venta->cliente->update(['estado' => 'Finalizado']); 

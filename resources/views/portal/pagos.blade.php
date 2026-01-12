@@ -299,7 +299,7 @@
                                             <label class="form-label small fw-bold">Monto (S/)</label>
                                             <div class="input-group">
                                                 <span class="input-group-text bg-white">S/</span>
-                                                <input type="number" step="0.01" name="monto_pagado" id="txt_monto" class="form-control" placeholder="00" required>
+                                                <input type="number" step="0.01" name="monto" id="txt_monto" class="form-control" placeholder="00" required>
                                             </div>
                                         </div>
                                         <div class="col-6 mb-3">

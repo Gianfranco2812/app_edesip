@@ -13,7 +13,7 @@ class Contrato extends Model
 
     protected $fillable = [
         'venta_id',
-        'plantilla_contrato_id', // Cambiado de 'plantilla_id' para coincidir con la migración
+        'plantilla_contrato_id', 
         'token_acceso',
         'contenido_generado',
         'estado',
@@ -22,27 +22,19 @@ class Contrato extends Model
         'ruta_pdf',
     ];
 
-    /**
-     * Campos que deben ser tratados como fechas.
-     */
+
     protected $casts = [
         'fecha_confirmacion' => 'datetime',
     ];
 
     
-    // --- RELACIONES ELOQUENT ---
 
-    /**
-     * Un Contrato PERTENECE A una Venta.
-     */
     public function venta()
     {
         return $this->belongsTo(Venta::class, 'venta_id');
     }
 
-    /**
-     * Un Contrato PERTENECE A una Plantilla de Contrato.
-     */
+
     public function plantilla()
     {
         return $this->belongsTo(PlantillaContrato::class, 'plantilla_contrato_id');

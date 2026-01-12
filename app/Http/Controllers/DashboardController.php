@@ -17,17 +17,15 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $esAdmin = $user->hasRole('Admin');
-        $now = Carbon::now(); // Fecha actual
+        $now = Carbon::now(); 
 
-        // ======================================================
-        // 1. KPI: INGRESOS DEL MES (Suma de cuotas PAGADAS)
-        // ======================================================
+
         $ingresosQuery = Cuota::where('estado_cuota', 'Pagada')
             ->whereMonth('fecha_pago', $now->month)
             ->whereYear('fecha_pago', $now->year);
 
         if (!$esAdmin) {
-            // Si es asesor, solo suma lo de SUS ventas
+
             $ingresosQuery->whereHas('venta', function($q) use ($user) {
                 $q->where('vendedor_id', $user->id);
             });
@@ -35,10 +33,7 @@ class DashboardController extends Controller
         $ingresosMes = $ingresosQuery->sum('monto_cuota');
 
 
-        // ======================================================
-        // 2. KPI: PAGOS POR VALIDAR (Vouchers subidos)
-        // ======================================================
-        // Corregido: Buscamos cuotas que tengan reportes 'Pendiente'
+
         $validacionesQuery = Cuota::whereHas('reportes', function ($q) {
             $q->where('estado', 'Pendiente');
         });
@@ -51,9 +46,6 @@ class DashboardController extends Controller
         $pagosPendientesValidar = $validacionesQuery->count();
 
 
-        // ======================================================
-        // 3. KPI: VENTAS DEL MES (Matrículas Nuevas)
-        // ======================================================
         $ventasMesQuery = Venta::where('estado', '!=', 'Anulada')
             ->whereMonth('fecha_venta', $now->month)
             ->whereYear('fecha_venta', $now->year);
@@ -61,13 +53,11 @@ class DashboardController extends Controller
         if (!$esAdmin) {
             $ventasMesQuery->where('vendedor_id', $user->id);
         }
-        // ¡AQUÍ ESTABA EL ERROR! Aseguramos que la variable se cree:
+
         $ventasMes = $ventasMesQuery->count();
 
 
-        // ======================================================
-        // 4. KPI: PROSPECTOS TOTALES
-        // ======================================================
+
         $prospectosQuery = Cliente::where('estado', 'Prospecto');
         
         if (!$esAdmin) {
@@ -76,9 +66,7 @@ class DashboardController extends Controller
         $totalProspectos = $prospectosQuery->count();
 
 
-        // ======================================================
-        // 5. TABLA: ÚLTIMAS VENTAS
-        // ======================================================
+
         $ultimasVentas = Venta::with(['cliente', 'grupo.programa', 'contrato'])
             ->where('estado', '!=', 'Anulada');
             
@@ -89,18 +77,16 @@ class DashboardController extends Controller
         $ultimasVentas = $ultimasVentas->latest('fecha_venta')->take(5)->get();
         
 
-        // ======================================================
-        // 6. GRÁFICO: RANKING DE ASESORES (MES ACTUAL)
-        // ======================================================
+
         $labelsGrafico = []; 
         $dataGrafico = [];
         $labelsProspectos = []; 
         $dataProspectos = [];
 
-        // 2. Solo consultamos si es Admin
+    
         if ($esAdmin) {
             
-            // --- Gráfico Ventas ---
+
             $rankingGrafico = \App\Models\User::role(['Asesor', 'Admin'])
                 ->withCount(['ventas' => function ($q) use ($now) {
                     $q->whereMonth('fecha_venta', $now->month)
@@ -122,10 +108,7 @@ class DashboardController extends Controller
             $labelsProspectos = $rankingProspectos->pluck('name');
             $dataProspectos   = $rankingProspectos->pluck('clientes_count');
         }
-        // ======================================================
-        // RETORNO A LA VISTA
-        // ======================================================
-        // Ahora todas las variables están definidas arriba
+
         return view('dashboard', compact(
         'ingresosMes', 
         'pagosPendientesValidar', 

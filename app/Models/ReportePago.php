@@ -9,10 +9,9 @@ class ReportePago extends Model
 {
     use HasFactory;
 
-    // ESTA LÍNEA ES LA IMPORTANTE. Si falta algún campo aquí, dará Error 500.
     protected $fillable = [
         'venta_id',
-        'cuota_id',       // <--- ¿Agregaste este?
+        'cuota_id',      
         'monto',
         'metodo_pago',
         'numero_operacion',
@@ -21,7 +20,6 @@ class ReportePago extends Model
         'observacion_admin'
     ];
 
-    // Relaciones (opcional, pero buena práctica tenerlas)
     public function venta()
     {
         return $this->belongsTo(Venta::class);

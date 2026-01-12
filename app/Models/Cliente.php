@@ -28,21 +28,18 @@ class Cliente extends Model
         'fecha_nacimiento' => 'date',
     ];
 
-    // --- RELACIONES ELOQUENT ---
 
-    // Un Cliente PERTENECE A un Vendedor/Asesor (Usuario)
     public function vendedor()
     {
         return $this->belongsTo(User::class, 'creado_por_vendedor_id');
     }
 
-    // Un Cliente TIENE MUCHAS Ventas
     public function ventas()
     {
         return $this->hasMany(Venta::class);
     }
 
-    // Un Cliente TIENE UN Nombre Completo (Atributo Mágico)
+ 
     public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . $this->apellido;

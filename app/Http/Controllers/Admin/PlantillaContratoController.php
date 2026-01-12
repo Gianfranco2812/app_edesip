@@ -15,13 +15,12 @@ class PlantillaContratoController extends Controller
         return view('admin.plantillas_contrato.index', compact('plantillas'));
     }
 
-    // Muestra el formulario de creación
+
     public function create()
     {
         return view('admin.plantillas_contrato.create');
     }
 
-    // Almacena en la BD
     public function store(Request $request)
     {
         $request->validate([
@@ -33,14 +32,11 @@ class PlantillaContratoController extends Controller
 
         return redirect()->route('plantillas-contrato.index')->with('success', 'Plantilla creada exitosamente.');
     }
-
-    // Muestra el formulario de edición
     public function edit(PlantillaContrato $plantillas_contrato)
     {
         return view('admin.plantillas_contrato.create', ['plantilla' => $plantillas_contrato]);
     }
 
-    // Actualiza en la BD
     public function update(Request $request, PlantillaContrato $plantillas_contrato)
     {
         $request->validate([
@@ -53,14 +49,12 @@ class PlantillaContratoController extends Controller
         return redirect()->route('plantillas-contrato.index')->with('success', 'Plantilla actualizada exitosamente.');
     }
 
-    // Elimina de la BD
     public function destroy(PlantillaContrato $plantillas_contrato)
     {
         try {
             $plantillas_contrato->delete();
             return back()->with('success', 'Plantilla eliminada exitosamente.');
         } catch (\Illuminate\Database\QueryException $e) {
-            // Captura el error si está siendo usada por un 'programa'
             return back()->with('error', 'No se puede eliminar. Esta plantilla está siendo usada por un programa.');
         }
     }
